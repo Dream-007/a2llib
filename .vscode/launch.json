@@ -1,0 +1,81 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug xcp_master_example (XCPsim.a2l)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/xcp_master/build/xcp_master_example",
+            "args": [
+                "${workspaceFolder}/XCPsim.a2l"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                { "name": "XCP_CAN_ID_MASTER", "value": "0x01" },
+                { "name": "XCP_CAN_ID_SLAVE",  "value": "0x02" }
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "xcp_master: build"
+        },
+        {
+            "name": "Debug xcp_master_example (custom A2L)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/xcp_master/build/xcp_master_example",
+            "args": [
+                "${input:a2lPath}"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "xcp_master: build"
+        },
+        {
+            "name": "Attach to running xcp_master_example",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/xcp_master/build/xcp_master_example",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "a2lPath",
+            "type": "promptString",
+            "description": "Absolute path to the A2L file",
+            "default": "${workspaceFolder}/XCPsim.a2l"
+        }
+    ]
+}

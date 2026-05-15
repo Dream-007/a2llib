@@ -6,5 +6,5 @@ CXX_DEFINES = -DBOOST_LOCALE_NO_LIB -DBOOST_LOCALE_STATIC_LINK
 
 CXX_INCLUDES = -isystem /home/shiheping/QianLiPrj/a2llib/include -isystem /home/shiheping/QianLiPrj/a2llib/build/vcpkg_installed/x64-linux/include
 
-CXX_FLAGS = -std=c++20
+CXX_FLAGS = -std=c++20 -pthread
 
