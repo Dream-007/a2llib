@@ -3,7 +3,8 @@
 * SPDX-License-Identifier: MIT
 */
 
-#include "A2lTextControl.h"
+#include "a2ltextcontrol.h"
+#include "wxcompat.h"
 
 #include <a2l/module.h>
 #include "windowid.h"
@@ -35,7 +36,7 @@ void A2lTextControl::Redraw() {
     case TreeItemType::A2ML: {
       if (auto* module = static_cast<Module*>(object); module != nullptr) {
         std::string a2ml = module->A2ml();
-        AppendText(wxString::FromUTF8(a2ml));
+        AppendText(WxUtf8(a2ml));
         ShowPosition(0);
       }
       break;

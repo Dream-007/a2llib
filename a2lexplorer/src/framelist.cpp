@@ -4,6 +4,7 @@
 */
 
 #include "framelist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -86,11 +87,11 @@ wxString FrameList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(frame->Name());
+      text = WxUtf8(frame->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(frame->Description());
+      text = WxUtf8(frame->Description());
       break;
 
     default:

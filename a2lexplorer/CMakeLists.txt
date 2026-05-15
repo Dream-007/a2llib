@@ -27,6 +27,7 @@ add_executable(a2lexplorer
         src/a2lrightpanel.h
         src/a2ltextcontrol.cpp
         src/a2ltextcontrol.h
+        src/wxcompat.h
         src/axispointlist.cpp
         src/axispointlist.h
         src/calibrationmethodlist.cpp
@@ -77,6 +78,12 @@ endif()
 
 target_link_libraries(a2lexplorer PRIVATE a2l)
 target_link_libraries(a2lexplorer PRIVATE util)
+if(TARGET sago::platform_folders)
+  target_link_libraries(a2lexplorer PRIVATE sago::platform_folders)
+endif()
+if(TARGET lfreist-hwinfo::hwinfo)
+  target_link_libraries(a2lexplorer PRIVATE lfreist-hwinfo::hwinfo)
+endif()
 
 if(VCPKG)
   find_package(expat CONFIG REQUIRED)

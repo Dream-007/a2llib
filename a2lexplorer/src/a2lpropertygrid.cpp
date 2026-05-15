@@ -9,13 +9,13 @@
 #include <vector>
 
 
-#include <wx/propgrid/props.h>
 #include <util/stringutil.h>
 
 #include <a2l/a2lstructs.h>
 #include <a2l/module.h>
 
 #include "a2lpropertygrid.h"
+#include "wxcompat.h"
 #include "windowid.h"
 
 using namespace a2l;
@@ -30,9 +30,9 @@ A2lPropertyGrid::A2lPropertyGrid(wxWindow *parent)
 
 void A2lPropertyGrid::FixNameDesc(const A2lObject& object) {
   Append( new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(object.Name())));
+                              WxUtf8(object.Name())));
   Append(new wxLongStringProperty("Description", wxPG_LABEL,
-                              wxString::FromUTF8(object.Description())));
+                              WxUtf8(object.Description())));
 }
 
 void A2lPropertyGrid::FixStringMap(const std::string_view& property_label,
@@ -42,7 +42,7 @@ void A2lPropertyGrid::FixStringMap(const std::string_view& property_label,
 
     wxArrayString list;
     for (const auto& [name, text] : string_list) {
-      list.Add(wxString::FromUTF8(name));
+      list.Add(WxUtf8(name));
     }
     const std::string_view prop_name = property_name.empty() ? property_label :
                                                   property_name;
@@ -53,8 +53,8 @@ void A2lPropertyGrid::FixStringMap(const std::string_view& property_label,
     for (const auto& [name, value] : string_list) {
       std::ostringstream item_prop_name;
       item_prop_name << prop_name << "_" << count;
-      AppendIn(item, new wxLongStringProperty(wxString::FromUTF8(name),
-         item_prop_name.str(), wxString::FromUTF8(value)));
+      AppendIn(item, new wxLongStringProperty(WxUtf8(name),
+         item_prop_name.str(), WxUtf8(value)));
       ++count;
     }
   }
@@ -67,7 +67,7 @@ void A2lPropertyGrid::FixStringMap(const std::string_view& property_label,
 
     wxArrayString list;
     for (const auto& [name, text] : string_list) {
-      list.Add(wxString::FromUTF8(name));
+      list.Add(WxUtf8(name));
     }
     const std::string_view prop_name = property_name.empty() ? property_label :
                                                   property_name;
@@ -78,8 +78,8 @@ void A2lPropertyGrid::FixStringMap(const std::string_view& property_label,
     for (const auto& [name, value] : string_list) {
       std::ostringstream item_prop_name;
       item_prop_name << prop_name << "_" << count;
-      AppendIn(item, new wxLongStringProperty(wxString::FromUTF8(name),
-         item_prop_name.str(), wxString::FromUTF8(value)));
+      AppendIn(item, new wxLongStringProperty(WxUtf8(name),
+         item_prop_name.str(), WxUtf8(value)));
       ++count;
     }
   }
@@ -94,7 +94,7 @@ void A2lPropertyGrid::FixFloatList( const std::string_view& property_label,
       list.Add(FormatDouble(value, 6));
     }
     Append( new wxArrayStringProperty(property_label.data(),
-         property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+         property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                                           list));
   }
 }
@@ -108,7 +108,7 @@ void A2lPropertyGrid::FixUintList(const std::string_view& property_label,
       list.Add(std::to_string(value));
     }
     Append( new wxArrayStringProperty(property_label.data(),
-           property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+           property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                                           list));
   }
 }
@@ -122,7 +122,7 @@ void A2lPropertyGrid::FixIntList( const std::string_view& property_label,
       list.Add(std::to_string(value));
     }
     Append( new wxArrayStringProperty(property_label.data(),
-           property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+           property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                                           list));
   }
 }
@@ -132,7 +132,7 @@ void A2lPropertyGrid::FixStringList( const std::string_view& property_label,
   if (!text_list.empty()) {
     wxArrayString list;
     for (const auto& value : text_list) {
-      list.Add(wxString::FromUTF8(value));
+      list.Add(WxUtf8(value));
     }
     const std::string_view prop_name = property_name.empty() ? property_label :
                                                              property_name;
@@ -144,7 +144,7 @@ void A2lPropertyGrid::FixStringList( const std::string_view& property_label,
         std::ostringstream item_prop_name;
         item_prop_name << prop_name << "_" << count;
         AppendIn(item, new wxLongStringProperty("", item_prop_name.str(),
-                                                wxString::FromUTF8(text)));
+                                                WxUtf8(text)));
         ++count;
       }
     }
@@ -156,7 +156,7 @@ void A2lPropertyGrid::FixStringList( const std::string_view& property_label,
   if (!text_list.empty()) {
     wxArrayString list;
     for (const auto& value : text_list) {
-      list.Add(wxString::FromUTF8(value));
+      list.Add(WxUtf8(value));
     }
     const std::string_view prop_name = property_name.empty() ? property_label :
                                                              property_name;
@@ -168,7 +168,7 @@ void A2lPropertyGrid::FixStringList( const std::string_view& property_label,
         std::ostringstream item_prop_name;
         item_prop_name << prop_name << "_" << count;
         AppendIn(item, new wxLongStringProperty("", item_prop_name.str(),
-                                                wxString::FromUTF8(text)));
+                                                WxUtf8(text)));
         ++count;
       }
     }
@@ -181,7 +181,7 @@ void A2lPropertyGrid::FixString(const std::string_view& property_label,
   if (!text.empty()) {
     Append( new wxStringProperty(property_label.data(),
       property_name.empty() ? wxPG_LABEL : wxString(property_name.data()),
-      wxString::FromUTF8(text)));
+      WxUtf8(text)));
   }
 }
 
@@ -246,7 +246,7 @@ void A2lPropertyGrid::FixAxisPts(const std::string_view& label,
     return;
   }
 
-  auto *root = Append(new wxStringProperty(wxString::FromUTF8(label.data()),
+  auto *root = Append(new wxStringProperty(WxUtf8(label.data()),
                                          wxPG_LABEL, ""));
 
   {
@@ -281,7 +281,7 @@ void A2lPropertyGrid::FixAxisRescale(const std::string_view& label,
   if (axis.DataType == A2lDataType::UNKNOWN) {
     return;
   }
-  auto *root = Append(new wxStringProperty(wxString::FromUTF8(label.data()),
+  auto *root = Append(new wxStringProperty(WxUtf8(label.data()),
                                            wxPG_LABEL, ""));
   {
     std::ostringstream temp;
@@ -321,7 +321,7 @@ void A2lPropertyGrid::FixDistOp(const std::string_view& label,
   if (dist.DataType == A2lDataType::UNKNOWN) {
     return;
   }
-  auto *root = Append(new wxStringProperty(wxString::FromUTF8(label.data()),
+  auto *root = Append(new wxStringProperty(WxUtf8(label.data()),
                                            wxPG_LABEL, ""));
   {
     std::ostringstream temp;
@@ -341,7 +341,7 @@ void A2lPropertyGrid::FixFncValue(const std::string_view& label,
   if (fnc.DataType == A2lDataType::UNKNOWN) {
     return;
   }
-  auto *root = Append(new wxStringProperty(wxString::FromUTF8(label.data()),
+  auto *root = Append(new wxStringProperty(WxUtf8(label.data()),
                                            wxPG_LABEL, ""));
   {
     std::ostringstream temp;
@@ -391,7 +391,7 @@ void A2lPropertyGrid::FixMaxRefresh( const A2lMaxRefresh& refresh) {
 void A2lPropertyGrid::FixSymbolLink(const A2lSymbolLink& symbol) {
   if (!symbol.SymbolName.empty()) {
     Append(new wxStringProperty("Symbol Name", wxPG_LABEL,
-                                wxString::FromUTF8(symbol.SymbolName)));
+                                WxUtf8(symbol.SymbolName)));
     Append(new wxIntProperty("Symbol Offset", wxPG_LABEL,
                              static_cast<long>(symbol.Offset)));
   }
@@ -781,9 +781,9 @@ void A2lPropertyGrid::Redraw() {
 void A2lPropertyGrid::Redraw(const A2lFile& file) {
   Append( new wxPropertyCategory("ASAP2 File") );
   Append( new wxStringProperty("Name", "name",
-                            wxString::FromUTF8(file.Name())));
+                            WxUtf8(file.Name())));
   Append( new wxFileProperty("File Name", "filename",
-                            wxString::FromUTF8(file.Filename())));
+                            WxUtf8(file.Filename())));
   const auto& version = file.A2lVersion();
   if (version.VersionNo > 0) {
     Append( new wxPropertyCategory("ASAP2 Version") );
@@ -801,17 +801,17 @@ void A2lPropertyGrid::Redraw(const A2lFile& file) {
   const A2lProject& project = file.Project();
   Append( new wxPropertyCategory("Project") );
   Append( new wxStringProperty("Name", "projname",
-                              wxString::FromUTF8(project.Name())));
+                              WxUtf8(project.Name())));
   Append( new wxLongStringProperty("Description", "projdesc",
-                              wxString::FromUTF8(project.Description())));
+                              WxUtf8(project.Description())));
 
   const A2lHeader& header = project.Header();
   Append( new wxLongStringProperty("Comments", "projcomment",
-                                  wxString::FromUTF8(header.Comment)));
+                                  WxUtf8(header.Comment)));
   Append( new wxStringProperty("Version", "projversion",
-                                  wxString::FromUTF8(header.VersionNo)));
+                                  WxUtf8(header.VersionNo)));
   Append( new wxStringProperty("Project", "projno",
-                              wxString::FromUTF8(header.ProjectNo)));
+                              WxUtf8(header.ProjectNo)));
 
   FixPropertyMap( "ECU", "modules", project.Modules());
 }
@@ -823,7 +823,7 @@ void A2lPropertyGrid::Redraw(const Module& module) {
   const auto& a2ml = module.A2ml();
   if (!a2ml.empty()) {
     Append(new wxLongStringProperty("Meta-Language", "a2ml",
-                                    wxString::FromUTF8(a2ml)));
+                                    WxUtf8(a2ml)));
   }
   FixStringMap("Interface Data", "if_data",
     module.IfDatas());
@@ -831,7 +831,7 @@ void A2lPropertyGrid::Redraw(const Module& module) {
   Append(new wxPropertyCategory("ECU Specific Definitions"));
   const auto& common = module.ModCommon();
   Append(new wxLongStringProperty("Comment", "common_comment",
-                                  wxString::FromUTF8(common.Comment)));
+                                  WxUtf8(common.Comment)));
 
   FixUint("Alignment Int8", "", common.AlignmentByte);
   FixUint("Alignment Int16", "", common.AlignmentWord);
@@ -884,7 +884,7 @@ void A2lPropertyGrid::Redraw(const a2l::A2lModPar& par) {
 void A2lPropertyGrid::DrawCategory( const A2lModPar& par) {
   Append(new wxPropertyCategory("ECU Management Data"));
   Append(new wxLongStringProperty("Comment", "par_comment",
-                                  wxString::FromUTF8(par.Comment)));
+                                  WxUtf8(par.Comment)));
   FixUintList("Address of EEPROM Identifiers", "eepk",
               par.AddressEpkList);
 
@@ -914,7 +914,7 @@ void A2lPropertyGrid::DrawCategory( const A2lModPar& par) {
   if (!par.MemorySegmentList.empty()) {
     wxArrayString name_list;
     for (const auto& seg : par.MemorySegmentList) {
-      name_list.Add(wxString::FromUTF8(seg.Name));
+      name_list.Add(WxUtf8(seg.Name));
     }
     Append(new wxArrayStringProperty("Memory Segments", "segments", name_list));
   }
@@ -928,12 +928,12 @@ void A2lPropertyGrid::DrawCategory( const A2lModPar& par) {
 void A2lPropertyGrid::Redraw(const A2lCalibrationMethod& method) {
   Append(new wxPropertyCategory("Calibration Method"));
   Append( new wxStringProperty("Method", wxPG_LABEL,
-                              wxString::FromUTF8(method.Method)));
+                              WxUtf8(method.Method)));
   Append( new wxUIntProperty("Version", wxPG_LABEL, method.Version));
   if (!method.CalibrationHandleList.empty()) {
     wxArrayString list;
     for (const auto& object : method.CalibrationHandleList) {
-      list.Add(wxString::FromUTF8(object.Comment));
+      list.Add(WxUtf8(object.Comment));
     }
     auto item = Append(new wxArrayStringProperty("Calibration Handles",
                                                  wxPG_LABEL,list));
@@ -946,7 +946,7 @@ void A2lPropertyGrid::Redraw(const A2lCalibrationMethod& method) {
       std::ostringstream prop_name;
       prop_name << "handle_" << count;
       AppendIn(item, new wxArrayStringProperty(
-                         wxString::FromUTF8(handle.Comment),
+                         WxUtf8(handle.Comment),
                          prop_name.str(),handle_list));
       ++count;
     }
@@ -965,9 +965,9 @@ void A2lPropertyGrid::Redraw(const A2lMemoryLayout& layout) {
 void A2lPropertyGrid::Redraw(const A2lMemorySegment& segment) {
   Append(new wxPropertyCategory("Memory Segment"));
   Append( new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(segment.Name)));
+                              WxUtf8(segment.Name)));
   Append( new wxStringProperty("Description", wxPG_LABEL,
-                              wxString::FromUTF8(segment.Description)));
+                              WxUtf8(segment.Description)));
   FixEnumList("Segment Type","", SegmentTypeToStringList(),
               segment.SegmentType);
   FixEnumList("Memory Type","", MemoryTypeToStringList(),
@@ -983,9 +983,9 @@ void A2lPropertyGrid::Redraw(const AxisDescr& axis) {
   Append(new wxPropertyCategory("Axis Description"));
   FixEnumList("Type", "", AxisTypeToStringList(), axis.AxisType());
   Append( new wxStringProperty("Input Quantity", wxPG_LABEL,
-                              wxString::FromUTF8(axis.InputQuantity())));
+                              WxUtf8(axis.InputQuantity())));
   Append( new wxStringProperty("Conversion", wxPG_LABEL,
-                              wxString::FromUTF8(axis.Conversion())));
+                              WxUtf8(axis.Conversion())));
   Append( new wxUIntProperty("Axis Points", wxPG_LABEL,axis.MaxAxisPoints()));
   Append( new wxFloatProperty("Lower Limit", wxPG_LABEL, axis.LowerLimit()));
   Append( new wxFloatProperty("Upper Limit", wxPG_LABEL, axis.UpperLimit()));
@@ -1030,12 +1030,12 @@ void A2lPropertyGrid::Redraw(const AxisPts& axis) {
   FixNameDesc(axis);
   FixHex("Address", "", axis.Address());
   Append( new wxStringProperty("Input Quantity", wxPG_LABEL,
-                              wxString::FromUTF8(axis.InputQuantity())));
+                              WxUtf8(axis.InputQuantity())));
   Append( new wxStringProperty("Record Reference", wxPG_LABEL,
-                              wxString::FromUTF8(axis.RefRecord())));
+                              WxUtf8(axis.RefRecord())));
   Append( new wxFloatProperty("Max Difference", wxPG_LABEL, axis.MaxDiff()));
   Append( new wxStringProperty("Conversion", wxPG_LABEL,
-                              wxString::FromUTF8(axis.Conversion())));
+                              WxUtf8(axis.Conversion())));
   Append( new wxUIntProperty("Max axis Points", wxPG_LABEL,
                             axis.MaxAxisPoints()));
   Append( new wxFloatProperty("Lower Limit", wxPG_LABEL, axis.LowerLimit()));
@@ -1087,11 +1087,11 @@ void A2lPropertyGrid::Redraw(const Characteristic& object) {
   FixEnumList("Type", "", CharacteristicTypeToStringList(), object.Type());
   FixHex("Address", "", object.Address());
   Append(new wxStringProperty("Reference to Data Record", wxPG_LABEL,
-         wxString::FromUTF8(object.Deposit())));
+         WxUtf8(object.Deposit())));
   Append(new wxFloatProperty("Max Difference", wxPG_LABEL,
                               object.MaxDiff()));
   Append(new wxStringProperty("Conversion", wxPG_LABEL,
-                              wxString::FromUTF8(object.Conversion())));
+                              WxUtf8(object.Conversion())));
   Append(new wxFloatProperty("Lower Limit", wxPG_LABEL,
                              object.LowerLimit()));
   Append(new wxFloatProperty("Upper Limit", wxPG_LABEL,
@@ -1106,7 +1106,7 @@ void A2lPropertyGrid::Redraw(const Characteristic& object) {
   const auto& dep = object.DependentCharacteristic();
   if (!dep.Formula.empty() || !dep.CharacteristicList.empty()) {
     Append(new wxLongStringProperty("Dependent Formula", wxPG_LABEL,
-                                wxString::FromUTF8(dep.Formula)));
+                                WxUtf8(dep.Formula)));
     FixStringList("Dependent List", "", dep.CharacteristicList);
   }
   FixBool("Discrete", "", object.Discrete());
@@ -1133,7 +1133,7 @@ void A2lPropertyGrid::Redraw(const Characteristic& object) {
   const auto& virt = object.VirtualCharacteristic();
   if (!virt.Formula.empty() || !virt.CharacteristicList.empty()) {
     Append(new wxLongStringProperty(" Virtual Formula", wxPG_LABEL,
-                                    wxString::FromUTF8(virt.Formula)));
+                                    WxUtf8(virt.Formula)));
     FixStringList("Virtual List", "", virt.CharacteristicList);
   }
 
@@ -1158,9 +1158,9 @@ void A2lPropertyGrid::Redraw(const AnnotationList& list) {
 
     wxArrayString text_list;
     for (const auto& text : note.Text) {
-      text_list.Add(wxString::FromUTF8(text));
+      text_list.Add(WxUtf8(text));
     }
-    Append(new wxArrayStringProperty(wxString::FromUTF8(label.str()),
+    Append(new wxArrayStringProperty(WxUtf8(label.str()),
               name.str(), text_list));
 
   }
@@ -1178,9 +1178,9 @@ void A2lPropertyGrid::Redraw(const CompuMethod& method) {
   FixNameDesc(method);
   FixEnumList("Type", "", ConversionTypeToStringList(), method.Type());
   Append(new wxStringProperty("Format", wxPG_LABEL,
-                              wxString::FromUTF8(method.Format())));
+                              WxUtf8(method.Format())));
   Append(new wxStringProperty("Unit", wxPG_LABEL,
-                              wxString::FromUTF8(method.PhysUnit())));
+                              WxUtf8(method.PhysUnit())));
 
   FixFloatList("Float Coefficients", "" , method.Coeffs());
   FixFloatList("Linear Coefficients", "" , method.CoeffsLinear());
@@ -1223,7 +1223,7 @@ void A2lPropertyGrid::Redraw(const CompuVtab& table) {
     std::ostringstream prop_name;
     prop_name << "key_" << count;
     AppendIn(item, new wxStringProperty(name, prop_name.str(),
-                                        wxString::FromUTF8(value)));
+                                        WxUtf8(value)));
     ++count;
   }
   FixString("Default Value", "" , table.DefaultValue());
@@ -1243,7 +1243,7 @@ void A2lPropertyGrid::Redraw(const CompuVtabRange& table) {
     std::ostringstream prop_name;
     prop_name << "key_" << count;
     AppendIn(item, new wxStringProperty(range.str(), prop_name.str(),
-                                        wxString::FromUTF8(value)));
+                                        WxUtf8(value)));
     ++count;
   }
   FixString("Default Value", "" , table.DefaultValue());
@@ -1289,7 +1289,7 @@ void A2lPropertyGrid::Redraw(const Instance& instance) {
   Append(new wxPropertyCategory("Instance"));
   FixNameDesc(instance);
   Append(new wxStringProperty("Type", wxPG_LABEL,
-                              wxString::FromUTF8(instance.RefTypeDef())));
+                              WxUtf8(instance.RefTypeDef())));
   FixHex("Address", "", instance.Address());
   FixEnumList("Address Type", "", AddressTypeToStringList(),
               instance.AddressType());
@@ -1310,7 +1310,7 @@ void A2lPropertyGrid::Redraw(const Instance& instance) {
 void A2lPropertyGrid::Redraw(const Overwrite& object) {
   Append(new wxPropertyCategory("Overwrite"));
   Append(new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(object.Name())));
+                              WxUtf8(object.Name())));
   Append(new wxUIntProperty("Axis", wxPG_LABEL,object.AxisNo()));
   FixString("Conversion", "", object.Conversion());
   FixExtendedLimits(object.ExtendedLimits());
@@ -1329,7 +1329,7 @@ void A2lPropertyGrid::Redraw(const Measurement& meas) {
   FixNameDesc(meas);
   FixEnumList("Data Type", "", DataTypeToStringList(), meas.DataType());
   Append(new wxStringProperty("Conversion", wxPG_LABEL,
-                              wxString::FromUTF8(meas.Conversion())));
+                              WxUtf8(meas.Conversion())));
   Append(new wxUIntProperty("Resolution", wxPG_LABEL, meas.Resolution()));
   Append(new wxFloatProperty("Accuracy", wxPG_LABEL, meas.Accuracy()));
   Append(new wxFloatProperty("Lower Limit", wxPG_LABEL, meas.LowerLimit()));
@@ -1367,7 +1367,7 @@ void A2lPropertyGrid::Redraw(const Measurement& meas) {
 void A2lPropertyGrid::Redraw(const RecordLayout& layout) {
   Append(new wxPropertyCategory("Record Layout"));
   Append(new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(layout.Name())));
+                              WxUtf8(layout.Name())));
 
   FixUint("Alignment Int8", "", layout.AlignmentByte());
   FixUint("Alignment Int16", "", layout.AlignmentWord());
@@ -1456,17 +1456,17 @@ void A2lPropertyGrid::Redraw(const RecordLayout& layout) {
 void A2lPropertyGrid::Redraw(const Transformer& transformer) {
   Append(new wxPropertyCategory("Transformer"));
   Append(new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(transformer.Name())));
+                              WxUtf8(transformer.Name())));
   Append(new wxStringProperty("Version", wxPG_LABEL,
-                              wxString::FromUTF8(transformer.Version())));
+                              WxUtf8(transformer.Version())));
   Append(new wxStringProperty("32-bit Executable", wxPG_LABEL,
-                              wxString::FromUTF8(transformer.Executable32())));
+                              WxUtf8(transformer.Executable32())));
   Append(new wxStringProperty("64-bit Executable", wxPG_LABEL,
-                              wxString::FromUTF8(transformer.Executable64())));
+                              WxUtf8(transformer.Executable64())));
   Append(new wxUIntProperty("Timeout", wxPG_LABEL,transformer.Timeout()));
   FixEnumList("Trigger", "", TriggerToStringList(), transformer.Trigger());
   Append(new wxStringProperty("Inverse Transformer", wxPG_LABEL,
-                  wxString::FromUTF8(transformer.InverseTransformer())));
+                  WxUtf8(transformer.InverseTransformer())));
   FixStringList("Input Objects", "", transformer.TransformerInObjects());
   FixStringList("Output Objects", "", transformer.TransformerOutObjects());
 }
@@ -1490,12 +1490,12 @@ void A2lPropertyGrid::Redraw(const Structure& structure) {
     std::ostringstream prop_name;
     prop_name << name << "_name";
     Append(new wxStringProperty("Name", prop_name.str(),
-                                wxString::FromUTF8(component->Name)));
+                                WxUtf8(component->Name)));
 
     std::ostringstream prop_typedef;
     prop_typedef << name << "_typedef";
     Append(new wxStringProperty("Typedef", prop_typedef.str(),
-                                wxString::FromUTF8(component->Typedef)));
+                                WxUtf8(component->Typedef)));
 
     std::ostringstream prop_offset;
     prop_offset << name << "_offset";
@@ -1528,7 +1528,7 @@ void A2lPropertyGrid::Redraw(const Unit& unit) {
   Append(new wxPropertyCategory("Unit"));
   FixNameDesc(unit);
   Append(new wxStringProperty("Display Identifier", wxPG_LABEL,
-                              wxString::FromUTF8(unit.DisplayIdentifier())));
+                              WxUtf8(unit.DisplayIdentifier())));
   FixEnumList("Type", "", UnitTypeToStringList(), unit.Type());
 
   FixString("Unit Reference", "", unit.RefUnit());
@@ -1557,7 +1557,7 @@ void A2lPropertyGrid::Redraw(const A2lUserRights& user) {
   Append(new wxPropertyCategory("User Rights"));
 
   Append(new wxStringProperty("", wxPG_LABEL,
-                              wxString::FromUTF8(user.UserLevelId)));
+                              WxUtf8(user.UserLevelId)));
   FixBool("Read Only", "", user.ReadOnly);
   for (const auto& group : user.RefGroupList) {
      FixStringList("Reference Group", "", group);
@@ -1595,7 +1595,7 @@ void A2lPropertyGrid::Redraw(const A2lVariantCoding& object) {
 void A2lPropertyGrid::Redraw(const A2lVarCharacteristic& object) {
   Append(new wxPropertyCategory("Variant Characteristic"));
   Append(new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(object.Name)));
+                              WxUtf8(object.Name)));
   FixStringList("Criterion Names", "", object.CriterionNameList);
   FixUintList("Variant Address", "", object.AddressList);
 }
@@ -1603,9 +1603,9 @@ void A2lPropertyGrid::Redraw(const A2lVarCharacteristic& object) {
 void A2lPropertyGrid::Redraw(const A2lVarCriterion& object) {
   Append(new wxPropertyCategory("Variant Criterion"));
   Append(new wxStringProperty("Name", wxPG_LABEL,
-                              wxString::FromUTF8(object.Name)));
+                              WxUtf8(object.Name)));
   Append(new wxStringProperty("Description", wxPG_LABEL,
-                              wxString::FromUTF8(object.Description)));
+                              WxUtf8(object.Description)));
   FixStringList("Values", "", object.ValueList);
   FixString("Measurement", "", object.Measurement);
   FixString("Characteristic", "", object.SelectionCharacteristic);

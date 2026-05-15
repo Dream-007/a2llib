@@ -4,6 +4,7 @@
 */
 
 #include "memorylayoutlist.h"
+#include "wxcompat.h"
 
 #include <sstream>
 
@@ -90,7 +91,7 @@ wxString MemoryLayoutList::OnGetItemText(long item, long column) const {
 
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(PrgTypeToString(layout.Type));
+      text = WxUtf8(PrgTypeToString(layout.Type));
       break;
 
     case 1: {
@@ -98,7 +99,7 @@ wxString MemoryLayoutList::OnGetItemText(long item, long column) const {
       for ( const auto& [com, if_data] : layout.IfDataList) {
         interfaces << com << " ";
       }
-      text = wxString::FromUTF8(interfaces.str());
+      text = WxUtf8(interfaces.str());
       break;
     }
 

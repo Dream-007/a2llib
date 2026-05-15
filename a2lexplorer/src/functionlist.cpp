@@ -4,6 +4,7 @@
 */
 
 #include "functionlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -86,11 +87,11 @@ wxString FunctionList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(function->Name());
+      text = WxUtf8(function->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(function->Description());
+      text = WxUtf8(function->Description());
       break;
 
     default:

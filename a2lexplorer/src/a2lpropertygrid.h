@@ -5,7 +5,9 @@
 
 #pragma once
 
+#include <wx/wx.h>
 #include <wx/propgrid/propgrid.h>
+#include <wx/propgrid/props.h>
 
 #include <string>
 #include <vector>
@@ -14,6 +16,7 @@
 #include <memory>
 #include <unordered_map>
 #include "a2ldocument.h"
+#include "wxcompat.h"
 namespace a2lgui {
 
 class A2lPropertyGrid : public wxPropertyGrid {
@@ -151,10 +154,10 @@ void A2lPropertyGrid::FixPropertyMap(const std::string_view& property_label,
     wxArrayString list;
     list.Alloc(object_list.size());
     for (const auto& [name, object] : object_list) {
-      list.Add(wxString::FromUTF8(name));
+      list.Add(WxUtf8(name));
     }
     Append( new wxArrayStringProperty(property_label.data(),
-           property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+           property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                                      list));
   }
 }
@@ -168,10 +171,10 @@ void A2lPropertyGrid::FixPropertyMap(const std::string_view& property_label,
     wxArrayString list;
     list.Alloc(object_list.size());
     for (const auto& [name, object] : object_list) {
-      list.Add(wxString::FromUTF8(name));
+      list.Add(WxUtf8(name));
     }
     Append( new wxArrayStringProperty(property_label.data(),
-           property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+           property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                                      list));
   }
 }
@@ -187,13 +190,13 @@ void A2lPropertyGrid::FixEnumList(const std::string_view& property_label,
 
   int count = 0;
   for (const auto& enum_name : enum_list) {
-    list.Add(wxString::FromUTF8(enum_name.data()), count);
+    list.Add(WxUtf8(enum_name.data()), count);
     ++count;
   }
 
   const int selected = static_cast<int>(selected_enum);
   Append(new wxEnumProperty(property_label.data(),
-          property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+          property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                                  list, selected));
 }
 
@@ -209,13 +212,13 @@ void A2lPropertyGrid::FixInEnumList(wxPGProperty* root,
   wxPGChoices list;
   int count = 0;
   for (const auto& enum_name : enum_list) {
-    list.Add(wxString::FromUTF8(enum_name.data()), count);
+    list.Add(WxUtf8(enum_name.data()), count);
     ++count;
   }
 
   const int selected = static_cast<int>(selected_enum);
   AppendIn(root, new wxEnumProperty(property_label.data(),
-           property_name.empty() ? wxPG_LABEL : wxString::FromUTF8(property_name.data()),
+           property_name.empty() ? wxPG_LABEL : WxUtf8(property_name.data()),
                             list, selected));
 }
 

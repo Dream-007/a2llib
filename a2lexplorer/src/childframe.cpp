@@ -16,6 +16,12 @@
 
 using namespace a2l;
 
+namespace {
+#ifndef _WIN32
+#include "img/sub.xpm"
+#endif
+}
+
 namespace a2lgui {
 
 wxBEGIN_EVENT_TABLE(ChildFrame, wxDocMDIChildFrame)
@@ -26,11 +32,11 @@ ChildFrame::ChildFrame(wxDocument *doc, wxView *view,
                      wxMDIParentFrame *parent,  wxWindowID id,
                      const wxString& title)
     : wxDocMDIChildFrame(doc, view, parent, id, title, wxDefaultPosition, wxDefaultSize,
-                         wxDEFAULT_FRAME_STYLE, wxASCII_STR(wxFrameNameStr)) {
+                         wxDEFAULT_FRAME_STYLE, wxFrameNameStr) {
 #ifdef _WIN32
   wxIcon sub("SUB_ICON", wxBITMAP_TYPE_ICO_RESOURCE);
 #else
-  wxIcon sub {wxICON(sub)};
+  wxIcon sub(sub_xpm);
 #endif
   SetIcon(sub);
   auto* main_panel = new wxPanel(this);
@@ -85,6 +91,5 @@ void ChildFrame::OnTreeSelected(wxTreeEvent& event) {
 }
 
 }
-
 
 

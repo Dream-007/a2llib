@@ -46,7 +46,9 @@ wxEND_EVENT_TABLE()
 
 bool A2lExplorer::OnInit() {
 
+#if wxCHECK_VERSION(3, 1, 0)
   SetAppearance(Appearance::System);
+#endif
 
   if (!wxApp::OnInit()) {
     return false;
@@ -165,5 +167,4 @@ void A2lExplorer::OpenFileEx(const std::string& filename, int line) const {
 }
 
 } // end namespace a2lgui
-
 

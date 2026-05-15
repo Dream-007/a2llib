@@ -4,6 +4,7 @@
 */
 
 #include "characteristiclist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -86,11 +87,11 @@ wxString CharacteristicList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(characteristic->Name());
+      text = WxUtf8(characteristic->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(CharacteristicTypeToString(characteristic->Type() ));
+      text = WxUtf8(CharacteristicTypeToString(characteristic->Type() ));
       break;
 
     default:

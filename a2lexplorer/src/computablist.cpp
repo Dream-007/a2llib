@@ -4,6 +4,7 @@
 */
 
 #include "computablist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -92,15 +93,15 @@ wxString CompuTabList::OnGetItemText(long item, long column) const {
     if (const CompuTab* tab = module->GetCompuTab(item); tab != nullptr) {
       switch (column) {
         case 0:
-          text = wxString::FromUTF8(tab->Name());
+          text = WxUtf8(tab->Name());
           break;
 
         case 1:
-          text = wxString::FromUTF8(ConversionTypeToString(tab->Type()));
+          text = WxUtf8(ConversionTypeToString(tab->Type()));
           break;
 
         case 2:
-          text = wxString::FromUTF8(tab->Description());
+          text = WxUtf8(tab->Description());
           break;
 
         default:
@@ -117,15 +118,15 @@ wxString CompuTabList::OnGetItemText(long item, long column) const {
     if (const CompuVtab* tab = module->GetCompuVtab(item); tab != nullptr) {
       switch (column) {
         case 0:
-          text = wxString::FromUTF8(tab->Name());
+          text = WxUtf8(tab->Name());
           break;
 
         case 1:
-          text = wxString::FromUTF8(ConversionTypeToString(tab->Type()));
+          text = WxUtf8(ConversionTypeToString(tab->Type()));
           break;
 
         case 2:
-          text = wxString::FromUTF8(tab->Description());
+          text = WxUtf8(tab->Description());
           break;
 
         default:
@@ -142,15 +143,15 @@ wxString CompuTabList::OnGetItemText(long item, long column) const {
     if (const CompuVtabRange* tab = module->GetCompuVtabRange(item); tab != nullptr) {
       switch (column) {
         case 0:
-          text = wxString::FromUTF8(tab->Name());
+          text = WxUtf8(tab->Name());
           break;
 
         case 1:
-          text = wxString::FromUTF8("");
+          text = WxUtf8("");
           break;
 
         case 2:
-          text = wxString::FromUTF8(tab->Description());
+          text = WxUtf8(tab->Description());
           break;
 
         default:

@@ -4,6 +4,7 @@
 */
 
 #include "measurementlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -87,15 +88,15 @@ wxString MeasurementList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(measurement->Name());
+      text = WxUtf8(measurement->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(DataTypeToString(measurement->DataType()));
+      text = WxUtf8(DataTypeToString(measurement->DataType()));
       break;
 
     case 2:
-      text = wxString::FromUTF8(measurement->Conversion());
+      text = WxUtf8(measurement->Conversion());
       break;
 
     default:

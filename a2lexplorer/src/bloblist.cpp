@@ -4,6 +4,7 @@
 */
 
 #include "bloblist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -87,15 +88,15 @@ wxString BlobList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(blob->Name());
+      text = WxUtf8(blob->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(A2lDocument::AddressToString(blob->Address()));
+      text = WxUtf8(A2lDocument::AddressToString(blob->Address()));
       break;
 
     case 2:
-      text = wxString::FromUTF8(std::to_string(blob->Size()));
+      text = WxUtf8(std::to_string(blob->Size()));
       break;
 
     default:

@@ -27,7 +27,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& start_pos, const wxSi
 #ifdef _WIN32
   wxIcon app("APP_ICON", wxBITMAP_TYPE_ICO_RESOURCE);
 #else
-  wxIcon app {wxICON(app)};
+  wxIcon app(app_xpm);
 #endif
   SetIcon(app);
   wxWindow::SetName("A2lTopWindow");
@@ -119,7 +119,7 @@ void MainFrame::OnAbout(wxCommandEvent&) {
 #ifdef _WIN32
       wxIcon app("APP_ICON", wxBITMAP_TYPE_ICO_RESOURCE);
 #else
-      wxIcon app {wxICON(app)};
+      wxIcon app(app_xpm);
 #endif
       info.SetIcon(app);
   }

@@ -4,6 +4,7 @@
 */
 
 #include "compumethodlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -87,15 +88,15 @@ wxString CompuMethodList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(method->Name());
+      text = WxUtf8(method->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(ConversionTypeToString(method->Type()));
+      text = WxUtf8(ConversionTypeToString(method->Type()));
       break;
 
     case 2:
-      text = wxString::FromUTF8(method->PhysUnit());
+      text = WxUtf8(method->PhysUnit());
       break;
 
     default:

@@ -7,6 +7,7 @@
 #include <wx/wx.h>
 
 #include "a2l/module.h"
+#include "wxcompat.h"
 #include "a2l/recordlayout.h"
 #include "a2lpropertygrid.h"
 #include "recordlayoutlist.h"
@@ -85,7 +86,7 @@ wxString RecordLayoutList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(layout->Name());
+      text = WxUtf8(layout->Name());
       break;
 
     default:

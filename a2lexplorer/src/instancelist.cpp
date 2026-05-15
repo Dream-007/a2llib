@@ -4,6 +4,7 @@
 */
 
 #include "instancelist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -86,11 +87,11 @@ wxString InstanceList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(instance->Name());
+      text = WxUtf8(instance->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(instance->RefTypeDef());
+      text = WxUtf8(instance->RefTypeDef());
       break;
 
     default:

@@ -4,6 +4,7 @@
 */
 
 #include "transformerlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -86,11 +87,11 @@ wxString TransformerList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(transformer->Name());
+      text = WxUtf8(transformer->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(TriggerToString(transformer->Trigger()));
+      text = WxUtf8(TriggerToString(transformer->Trigger()));
       break;
 
     default:

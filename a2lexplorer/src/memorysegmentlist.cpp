@@ -4,6 +4,7 @@
 */
 
 #include "memorysegmentlist.h"
+#include "wxcompat.h"
 
 #include <sstream>
 
@@ -91,14 +92,14 @@ wxString MemorySegmentList::OnGetItemText(long item, long column) const {
 
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(segment.Name);
+      text = WxUtf8(segment.Name);
       break;
 
     case 1: {
       std::ostringstream types;
       types << SegmentTypeToString(segment.SegmentType) << "/" <<
         MemoryTypeToString(segment.MemoryType);
-      text = wxString::FromUTF8(types.str());
+      text = WxUtf8(types.str());
       break;
     }
 
@@ -107,7 +108,7 @@ wxString MemorySegmentList::OnGetItemText(long item, long column) const {
       for ( const auto& [com, if_data] : segment.IfDataList) {
         interfaces << com << " ";
       }
-      text = wxString::FromUTF8(interfaces.str());
+      text = WxUtf8(interfaces.str());
       break;
     }
 

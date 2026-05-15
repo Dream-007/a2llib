@@ -4,6 +4,7 @@
 */
 
 #include "typedeflist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -87,11 +88,11 @@ wxString TypedefList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(def.second->Name());
+      text = WxUtf8(def.second->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(TypedefTypeToString(def.first));
+      text = WxUtf8(TypedefTypeToString(def.first));
       break;
 
     default:

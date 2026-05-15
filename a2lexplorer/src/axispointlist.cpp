@@ -4,6 +4,7 @@
 */
 
 #include "axispointlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -87,11 +88,11 @@ wxString AxisPointList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(axis_pts->Name());
+      text = WxUtf8(axis_pts->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(axis_pts->Description());
+      text = WxUtf8(axis_pts->Description());
       break;
 
     default:

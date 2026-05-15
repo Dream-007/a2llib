@@ -5,8 +5,8 @@
     "boost-locale",
     "boost-endian",
     "boost-asio",
-    "boost-process",
-    "boost-filesystem"
+    "boost-filesystem",
+    "boost-process"
   ],
     "features": {
       "tools": {

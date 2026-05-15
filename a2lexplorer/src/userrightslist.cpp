@@ -4,6 +4,7 @@
 */
 
 #include "userrightslist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -82,7 +83,7 @@ wxString UserRightsList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(user->UserLevelId);
+      text = WxUtf8(user->UserLevelId);
       break;
 
     default:

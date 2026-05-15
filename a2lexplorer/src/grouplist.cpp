@@ -4,6 +4,7 @@
 */
 
 #include "grouplist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -86,11 +87,11 @@ wxString GroupList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(group->Name());
+      text = WxUtf8(group->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(group->Description());
+      text = WxUtf8(group->Description());
       break;
 
     default:

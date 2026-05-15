@@ -4,6 +4,7 @@
 */
 
 #include "unitlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -83,11 +84,11 @@ wxString UnitList::OnGetItemText(long item, long column) const {
   }
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(unit->Name());
+      text = WxUtf8(unit->Name());
       break;
 
     case 1:
-      text = wxString::FromUTF8(unit->DisplayIdentifier());
+      text = WxUtf8(unit->DisplayIdentifier());
       break;
 
     default:

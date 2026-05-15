@@ -4,6 +4,7 @@
 */
 
 #include "calibrationmethodlist.h"
+#include "wxcompat.h"
 
 #include <wx/wx.h>
 #include <wx/splitter.h>
@@ -85,11 +86,11 @@ wxString CalibrationMethodList::OnGetItemText(long item, long column) const {
 
   switch (column) {
     case 0:
-      text = wxString::FromUTF8(method.Method);
+      text = WxUtf8(method.Method);
       break;
 
     case 1:
-      text = wxString::FromUTF8(std::to_string(method.Version));
+      text = WxUtf8(std::to_string(method.Version));
       break;
 
     default:
