@@ -1,4 +1,8 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/xcp_master.dir/src/signal_access.cpp.o"
+  "CMakeFiles/xcp_master.dir/src/signal_access.cpp.o.d"
+  "CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o"
+  "CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o.d"
   "CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o"
   "CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o.d"
   "CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o"

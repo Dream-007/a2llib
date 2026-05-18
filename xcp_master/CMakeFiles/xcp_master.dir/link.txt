@@ -1,2 +1,2 @@
-/usr/bin/ar qc libxcp_master.a CMakeFiles/xcp_master.dir/src/xcp_master.cpp.o CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o
+/usr/bin/ar qc libxcp_master.a CMakeFiles/xcp_master.dir/src/xcp_master.cpp.o CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o CMakeFiles/xcp_master.dir/src/signal_access.cpp.o
 /usr/bin/ranlib libxcp_master.a

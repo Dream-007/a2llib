@@ -8,6 +8,8 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/shiheping/QianLiPrj/a2llib/xcp_master/src/signal_access.cpp" "CMakeFiles/xcp_master.dir/src/signal_access.cpp.o" "gcc" "CMakeFiles/xcp_master.dir/src/signal_access.cpp.o.d"
+  "/home/shiheping/QianLiPrj/a2llib/xcp_master/src/ts_can_device.cpp" "CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o" "gcc" "CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o.d"
   "/home/shiheping/QianLiPrj/a2llib/xcp_master/src/xcp_can_transport.cpp" "CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o" "gcc" "CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o.d"
   "/home/shiheping/QianLiPrj/a2llib/xcp_master/src/xcp_error.cpp" "CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o" "gcc" "CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o.d"
   "/home/shiheping/QianLiPrj/a2llib/xcp_master/src/xcp_master.cpp" "CMakeFiles/xcp_master.dir/src/xcp_master.cpp.o" "gcc" "CMakeFiles/xcp_master.dir/src/xcp_master.cpp.o.d"

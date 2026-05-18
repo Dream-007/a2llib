@@ -2,22 +2,24 @@
  * Copyright 2026
  * SPDX-License-Identifier: MIT
  *
- * Example: build an XCP-on-CAN master from an A2L file.
+ * Example: drive an XCP-on-CAN slave through the TOSUN TSCAN SDK,
+ * configured from an A2L file.
  *
- * 1. Parse the A2L using liba2l.
- * 2. Walk every Module, fetch its XCP IF_DATA (XCP or XCP_PLUS) and extract
- *    the master / slave CAN identifiers and whether CAN-FD is used.
- * 3. Construct an XcpCanTransport with that configuration.
- * 4. Open an XcpMaster, run CONNECT, GET_STATUS, GET_COMM_MODE_INFO, GET_ID
- *    and read a few DAQ info blocks, printing the decoded responses or the
- *    parsed error code on failure.
- *
- * The actual CAN driver is supplied by the host project through
- * tsapp_transmit_canfd_async / tsfifo_receive_canfd_msgs.  When building this
- * example standalone (no driver linked), define XCP_MASTER_STUB_DRIVER to
- * pull in a no-op stub so the example links.  In that mode every command
- * will time out, which is exactly what a real master would report when the
- * ECU is offline; it confirms wiring and error-handling without any hardware.
+ * Flow:
+ *   1. Parse the A2L using liba2l.
+ *   2. Pull CAN_ID_MASTER / CAN_ID_SLAVE / CAN-FD flag from the XCP IF_DATA
+ *      block.  Falls back to a raw-text scan when liba2l's structured XCP
+ *      scanner rejects the block (e.g. unknown LPDU_ID keyword); falls
+ *      further back to XCP_CAN_ID_MASTER / SLAVE env-vars.
+ *   3. Bring up the TOSUN device:
+ *        initialize_lib_tscan -> tscan_scan_devices -> tscan_get_device_info
+ *        -> tscan_connect      -> tscan_config_canfd_by_baudrate
+ *      All wrapped inside TsCanDevice.
+ *   4. Construct XcpCanTransport with that device handle.
+ *   5. Open XcpMaster, run CONNECT / GET_STATUS / GET_COMM_MODE_INFO /
+ *      GET_ID / GET_DAQ_PROCESSOR_INFO / GET_DAQ_RESOLUTION_INFO /
+ *      DISCONNECT, decoding responses and printing the parsed error code
+ *      on failure.
  */
 
 #include <chrono>
@@ -30,6 +32,8 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 #include "a2l/a2lfile.h"
 #include "a2l/a2lproject.h"
@@ -37,43 +41,29 @@
 #include "a2l/xcp/xcpdatablock.h"
 #include "a2l/xcp/xcponcan.h"
 
+#include "xcp_master/signal_access.h"
+#include "xcp_master/ts_can_device.h"
 #include "xcp_master/xcp_can_transport.h"
 #include "xcp_master/xcp_master.h"
 #include "xcp_master/xcp_protocol.h"
-
-#ifdef XCP_MASTER_STUB_DRIVER
-extern "C" {
-int tsapp_transmit_canfd_async(const PLIBCANFD /*frame*/) { return 0; }
-int tsfifo_receive_canfd_msgs(const PLIBCANFD /*buffers*/, const ps32 size,
-                              const s32 /*channel*/, const bool /*include_tx*/) {
-  if (size) *size = 0;
-  return 0;
-}
-}
-#endif
 
 namespace {
 
 struct XcpEndpoints {
   uint32_t can_id_master = 0;
-  uint32_t can_id_slave = 0;
+  uint32_t can_id_slave  = 0;
   bool extended_master = false;
-  bool extended_slave = false;
-  bool use_canfd = false;
-  uint16_t version = 0;
+  bool extended_slave  = false;
+  bool use_canfd       = false;
+  uint16_t version     = 0;
 };
-
-std::optional<XcpEndpoints> ExtractXcpOnCan(const a2l::A2lFile& file);
 
 // -- raw text fallback ------------------------------------------------------
 // liba2l's bison/flex XCP IF_DATA scanner currently lacks some keywords
 // (e.g. LPDU_ID inside XCP_ON_FLX).  When the structured parse rejects a
-// block, we keep the raw text on the Module via AddIfData, and a simple
-// tokenizer is enough to pluck CAN_ID_MASTER / CAN_ID_SLAVE / CAN_FD out of
-// the XCP_ON_CAN sub-block.
-namespace {
-
-// Skip whitespace and `/* ... */` comments common in A2L files.
+// block we keep the raw text on the Module via AddIfData; a simple
+// tokeniser is then enough to pluck CAN_ID_MASTER / CAN_ID_SLAVE / CAN_FD
+// out of the XCP_ON_CAN sub-block.
 void SkipWsAndComments(std::string_view s, std::size_t& p) {
   while (p < s.size()) {
     const char c = s[p];
@@ -118,16 +108,14 @@ bool TryParseUInt(const std::string& tok, uint32_t& out) {
   }
 }
 
-}  // namespace
-
 std::optional<XcpEndpoints> ParseXcpOnCanRawText(std::string_view text) {
-  // Find `/begin XCP_ON_CAN` ... `/end XCP_ON_CAN`.
   const auto begin_pos = text.find("XCP_ON_CAN");
   if (begin_pos == std::string_view::npos) return std::nullopt;
   const auto end_pos = text.find("/end", begin_pos);
   if (end_pos == std::string_view::npos) return std::nullopt;
-  const auto inner = text.substr(begin_pos + std::strlen("XCP_ON_CAN"),
-                                 end_pos - (begin_pos + std::strlen("XCP_ON_CAN")));
+  const auto inner = text.substr(
+      begin_pos + std::strlen("XCP_ON_CAN"),
+      end_pos - (begin_pos + std::strlen("XCP_ON_CAN")));
 
   XcpEndpoints ep;
   std::size_t p = 0;
@@ -135,7 +123,6 @@ std::optional<XcpEndpoints> ParseXcpOnCanRawText(std::string_view text) {
   while (p < inner.size()) {
     std::string tok = NextToken(inner, p);
     if (tok.empty()) break;
-    // XCP_ON_CAN's first numeric token is the transport version (e.g. 0x0100).
     if (!first_number_seen) {
       uint32_t v = 0;
       if (TryParseUInt(tok, v)) {
@@ -147,14 +134,14 @@ std::optional<XcpEndpoints> ParseXcpOnCanRawText(std::string_view text) {
     if (tok == "CAN_ID_MASTER") {
       uint32_t v = 0;
       if (TryParseUInt(NextToken(inner, p), v)) {
-        ep.can_id_master =
-            xcp_master::CanTransportConfig::StripExtended(v, &ep.extended_master);
+        ep.can_id_master = xcp_master::CanTransportConfig::StripExtended(
+            v, &ep.extended_master);
       }
     } else if (tok == "CAN_ID_SLAVE") {
       uint32_t v = 0;
       if (TryParseUInt(NextToken(inner, p), v)) {
-        ep.can_id_slave =
-            xcp_master::CanTransportConfig::StripExtended(v, &ep.extended_slave);
+        ep.can_id_slave = xcp_master::CanTransportConfig::StripExtended(
+            v, &ep.extended_slave);
       }
     } else if (tok == "CAN_FD") {
       ep.use_canfd = true;
@@ -168,13 +155,11 @@ std::optional<XcpEndpoints> ExtractXcpOnCan(const a2l::A2lFile& file) {
   for (const auto& [module_name, module] : file.Project().Modules()) {
     if (!module) continue;
 
-    // Prefer XCP_PLUS (1.x extension) when present, otherwise plain XCP.
     const a2l::xcp::XcpDataBlock* block = module->GetXcpPlusDataBlock();
     if (block == nullptr || !block->IsOk()) {
       block = module->GetXcpDataBlock();
     }
 
-    // Structured parse succeeded?  Pull values from the typed XcpOnCan.
     if (block != nullptr && block->IsOk() &&
         !block->GetXcpOnCans().empty()) {
       const auto& on_can = block->GetXcpOnCans().front();
@@ -199,11 +184,6 @@ std::optional<XcpEndpoints> ExtractXcpOnCan(const a2l::A2lFile& file) {
                 << " - falling back to raw text scan\n";
     }
 
-    // Fallback: liba2l's bison/flex XCP scanner does not yet recognise
-    // every keyword (e.g. LPDU_ID inside XCP_ON_FLX); when it fails the
-    // whole IF_DATA XCP block is dropped on the floor.  We still have the
-    // raw block text from AddIfData, so we scan it directly for the
-    // XCP_ON_CAN sub-block and pluck out CAN_ID_MASTER / CAN_ID_SLAVE.
     for (const auto& [proto, raw] : module->IfDatas()) {
       if (proto != "XCP" && proto != "XCPplus") continue;
       auto ep = ParseXcpOnCanRawText(raw);
@@ -228,21 +208,49 @@ void PrintResult(const char* label, const xcp_master::XcpResult& r) {
 
 int main(int argc, char* argv[]) {
   if (argc < 2) {
-    std::cerr << "Usage: " << argv[0] << " <input.a2l>\n";
+    std::cerr << "Usage: " << argv[0]
+              << " <input.a2l> [channel] [serial]"
+              << " [--read=<signal>]... [--write=<signal>=<value>]...\n";
     return EXIT_FAILURE;
   }
 
+  // Split positional and flag arguments so existing channel/serial usage
+  // keeps working.
+  std::vector<std::string> positional;
+  std::vector<std::string> reads;
+  std::vector<std::pair<std::string, std::string>> writes;
+  for (int i = 1; i < argc; ++i) {
+    std::string a = argv[i];
+    if (a.rfind("--read=", 0) == 0) {
+      reads.emplace_back(a.substr(7));
+    } else if (a.rfind("--write=", 0) == 0) {
+      const std::string rest = a.substr(8);
+      const auto eq = rest.find('=');
+      if (eq == std::string::npos) {
+        std::cerr << "ignoring --write without '=': " << a << '\n';
+        continue;
+      }
+      writes.emplace_back(rest.substr(0, eq), rest.substr(eq + 1));
+    } else {
+      positional.push_back(std::move(a));
+    }
+  }
+  if (positional.empty()) {
+    std::cerr << "missing <input.a2l>\n";
+    return EXIT_FAILURE;
+  }
+
+  // 1. Parse A2L.
   a2l::A2lFile a2l;
-  a2l.Filename(argv[1]);
+  a2l.Filename(positional[0]);
   if (!a2l.ParseFile()) {
     std::cerr << "Failed to parse A2L: " << a2l.LastError() << '\n';
     return EXIT_FAILURE;
   }
 
+  // 2. Resolve CAN endpoints.
   auto endpoints = ExtractXcpOnCan(a2l);
   if (!endpoints) {
-    // Allow a manual override through environment variables when the A2L
-    // does not contain XCP-on-CAN IF_DATA.
     const char* m = std::getenv("XCP_CAN_ID_MASTER");
     const char* s = std::getenv("XCP_CAN_ID_SLAVE");
     if (m == nullptr || s == nullptr) {
@@ -260,15 +268,39 @@ int main(int argc, char* argv[]) {
     endpoints = fallback;
   }
 
+  const uint8_t channel = (positional.size() > 1)
+      ? static_cast<uint8_t>(std::strtoul(positional[1].c_str(), nullptr, 0))
+      : 0;
+  const std::string serial =
+      (positional.size() > 2) ? positional[2] : std::string{};
+
   std::cout << "XCP-on-CAN endpoints: master=0x" << std::hex
             << endpoints->can_id_master << " slave=0x"
             << endpoints->can_id_slave << std::dec
             << (endpoints->use_canfd ? " [CAN-FD]" : " [CAN]")
-            << " transport_version=0x" << std::hex << endpoints->version
-            << std::dec << '\n';
+            << " channel=" << static_cast<int>(channel)
+            << (serial.empty() ? "" : (" serial=" + serial))
+            << '\n';
 
+  // 3. Bring up TOSUN device.
+  xcp_master::TsCanDevice device;
+  xcp_master::TsCanDeviceConfig dcfg;
+  dcfg.explicit_serial = serial;
+  dcfg.channels = { channel };
+  // Use TSCAN defaults specified by the user: 500k arb / 2M data /
+  // ISO CAN-FD / Normal mode / 120 Ohm enabled.
+  if (!device.Open(dcfg)) {
+    std::cerr << "TsCanDevice open failed: " << device.LastError() << '\n';
+    return EXIT_FAILURE;
+  }
+  std::cout << "Connected: " << device.Info().manufacturer << " / "
+            << device.Info().product << " / " << device.Info().serial
+            << " (handle=0x" << std::hex << device.Handle() << std::dec
+            << ")\n";
+
+  // 4. Build the XCP transport on top of that handle.
   xcp_master::CanTransportConfig tcfg;
-  tcfg.channel = 0;
+  tcfg.channel = channel;
   tcfg.can_id_master = endpoints->can_id_master;
   tcfg.can_id_slave = endpoints->can_id_slave;
   tcfg.extended_master = endpoints->extended_master;
@@ -276,7 +308,8 @@ int main(int argc, char* argv[]) {
   tcfg.use_canfd = endpoints->use_canfd;
   tcfg.brs = endpoints->use_canfd;
 
-  auto transport = std::make_unique<xcp_master::XcpCanTransport>(tcfg);
+  auto transport =
+      std::make_unique<xcp_master::XcpCanTransport>(device, tcfg);
 
   xcp_master::XcpMasterConfig mcfg;
   mcfg.default_timeout = std::chrono::milliseconds(500);
@@ -288,6 +321,7 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
+  // 5. Standard discovery + status sequence.
   auto connect = master.Connect();
   PrintResult("CONNECT", connect);
   if (!connect) {
@@ -319,8 +353,52 @@ int main(int argc, char* argv[]) {
   PrintResult("GET_ID", master.GetId(xcp_master::XcpIdType::FILENAME_ASAM_MC2));
   PrintResult("GET_DAQ_PROCESSOR_INFO", master.GetDaqProcessorInfo());
   PrintResult("GET_DAQ_RESOLUTION_INFO", master.GetDaqResolutionInfo());
+
+  // -- Symbol-name driven read / write ---------------------------------------
+  xcp_master::XcpSignalAccess signals(master, a2l);
+  std::cout << "Indexed " << signals.Size()
+            << " scalar signal(s) from the A2L\n";
+
+  for (const auto& name : reads) {
+    const xcp_master::SignalDescriptor* d = signals.Find(name);
+    if (d == nullptr) {
+      std::cout << "  READ " << name << ": not in A2L\n";
+      continue;
+    }
+    uint64_t raw = 0;
+    double phys = 0.0;
+    std::string err;
+    if (!signals.ReadRawU64(name, raw, &err)) {
+      std::cout << "  READ " << name << ": FAIL - " << err << '\n';
+      continue;
+    }
+    signals.ReadPhysical(name, phys, &err);
+    std::cout << "  READ " << name << " @0x" << std::hex << d->address
+              << std::dec << " raw=" << raw << " phys=" << phys << '\n';
+  }
+
+  for (const auto& [name, val_str] : writes) {
+    const xcp_master::SignalDescriptor* d = signals.Find(name);
+    if (d == nullptr) {
+      std::cout << "  WRITE " << name << ": not in A2L\n";
+      continue;
+    }
+    const double v = std::strtod(val_str.c_str(), nullptr);
+    std::string err;
+    if (!signals.WritePhysical(name, v, &err)) {
+      std::cout << "  WRITE " << name << "=" << v << ": FAIL - " << err
+                << '\n';
+      continue;
+    }
+    double readback = 0.0;
+    signals.ReadPhysical(name, readback, &err);
+    std::cout << "  WRITE " << name << "=" << v
+              << " OK (readback=" << readback << ")\n";
+  }
+
   PrintResult("DISCONNECT", master.Disconnect());
 
   master.Close();
+  device.Close();
   return EXIT_SUCCESS;
 }

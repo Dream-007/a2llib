@@ -211,6 +211,54 @@ example/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master_example.dir/build.make CMakeFiles/xcp_master_example.dir/example/main.cpp.s
 .PHONY : example/main.cpp.s
 
+src/signal_access.o: src/signal_access.cpp.o
+.PHONY : src/signal_access.o
+
+# target to build an object file
+src/signal_access.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/src/signal_access.cpp.o
+.PHONY : src/signal_access.cpp.o
+
+src/signal_access.i: src/signal_access.cpp.i
+.PHONY : src/signal_access.i
+
+# target to preprocess a source file
+src/signal_access.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/src/signal_access.cpp.i
+.PHONY : src/signal_access.cpp.i
+
+src/signal_access.s: src/signal_access.cpp.s
+.PHONY : src/signal_access.s
+
+# target to generate assembly for a file
+src/signal_access.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/src/signal_access.cpp.s
+.PHONY : src/signal_access.cpp.s
+
+src/ts_can_device.o: src/ts_can_device.cpp.o
+.PHONY : src/ts_can_device.o
+
+# target to build an object file
+src/ts_can_device.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o
+.PHONY : src/ts_can_device.cpp.o
+
+src/ts_can_device.i: src/ts_can_device.cpp.i
+.PHONY : src/ts_can_device.i
+
+# target to preprocess a source file
+src/ts_can_device.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.i
+.PHONY : src/ts_can_device.cpp.i
+
+src/ts_can_device.s: src/ts_can_device.cpp.s
+.PHONY : src/ts_can_device.s
+
+# target to generate assembly for a file
+src/ts_can_device.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.s
+.PHONY : src/ts_can_device.cpp.s
+
 src/xcp_can_transport.o: src/xcp_can_transport.cpp.o
 .PHONY : src/xcp_can_transport.o
 
@@ -300,6 +348,12 @@ help:
 	@echo "... example/main.o"
 	@echo "... example/main.i"
 	@echo "... example/main.s"
+	@echo "... src/signal_access.o"
+	@echo "... src/signal_access.i"
+	@echo "... src/signal_access.s"
+	@echo "... src/ts_can_device.o"
+	@echo "... src/ts_can_device.i"
+	@echo "... src/ts_can_device.s"
 	@echo "... src/xcp_can_transport.o"
 	@echo "... src/xcp_can_transport.i"
 	@echo "... src/xcp_can_transport.s"

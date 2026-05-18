@@ -2,19 +2,23 @@
  * Copyright 2026
  * SPDX-License-Identifier: MIT
  *
- * XCP on CAN / CAN-FD transport.
+ * XCP on CAN / CAN-FD transport using the TOSUN TSCAN (TSMaster) SDK.
  *
- * Implements XcpTransport on top of the vendor TLIBCANFD frame structure and
- * the two C functions tsapp_transmit_canfd_async / tsfifo_receive_canfd_msgs.
+ * The actual SDK entry points are
+ *   uint32_t tscan_transmit_canfd_async(size_t handle, const TLibCANFD*);
+ *   uint32_t tsfifo_receive_canfd_msgs (size_t handle, const TLibCANFD*,
+ *                                       int32_t* count, uint8_t channel,
+ *                                       uint8_t rxtx);
+ * Both take an opaque device handle obtained via tscan_connect.  The
+ * handle is owned by a TsCanDevice instance and passed in by reference at
+ * construction time.
  *
  * Framing per ASAM XCP-on-CAN v1.x:
- *   - Each XCP packet (CTO or DTO) occupies the data field of a single CAN
- *     frame: byte 0..N-1 of the frame is the XCP packet starting with PID.
- *     There is no extra XCP header on top of a CAN frame.
- *   - The master sends on CAN_ID_MASTER and listens on CAN_ID_SLAVE.
- *   - For 11-bit identifiers, the high bit of the 32-bit ID is 0.  For 29-bit
- *     IDs, the master sets the extended flag in TLIBCANFD::FProperties bit 2.
- *     A2L can express this through bit 31 of the ID (0x80000000).
+ *   - One XCP packet (CTO or DTO) per CAN frame, byte 0 = PID.
+ *   - Master sends on CAN_ID_MASTER, listens on CAN_ID_SLAVE.
+ *   - For 11-bit IDs the high bits of the 32-bit FIdentifier are 0; for
+ *     29-bit IDs we set MASK_CANProp_EXTEND in FProperties.
+ *   - For CAN-FD the IS_FD bit of FFDProperties is set.
  */
 
 #pragma once
@@ -26,20 +30,21 @@
 #include <vector>
 
 #include "xcp_master/libcanfd.h"
+#include "xcp_master/ts_can_device.h"
 #include "xcp_master/xcp_transport.h"
 
 namespace xcp_master {
 
 struct CanTransportConfig {
-  uint8_t  channel        = 0;     ///< TLIBCANFD::FIdxChn
+  uint8_t  channel        = 0;     ///< APP_CHANNEL index (0 or 1 on TOSUN box)
   uint32_t can_id_master  = 0;     ///< master->slave (CMD/STIM)
   uint32_t can_id_slave   = 0;     ///< slave->master (RES/ERR/EV/SERV/DAQ)
   bool     extended_master = false;///< 29-bit identifier for master->slave
   bool     extended_slave  = false;///< 29-bit identifier for slave->master
-  bool     use_canfd      = false; ///< CAN-FD frames (EDL = 1)
+  bool     use_canfd      = false; ///< Use CAN-FD frame (IS_FD bit)
   bool     brs            = false; ///< Bit-rate switching for CAN-FD
   uint8_t  pad_byte       = 0x00;  ///< Padding byte when max_dlc is required
-  uint8_t  max_dlc        = 8;     ///< Pad CTO frames to this DLC (8 or FD)
+  uint8_t  max_dlc        = 8;     ///< Pad CTO frames to this DLC
   bool     pad_to_max_dlc = false; ///< Pad outgoing CTO frames
 
   /// Convenience: derive 29-bit flag from A2L convention (bit 31 set means
@@ -56,7 +61,9 @@ struct CanTransportConfig {
 
 class XcpCanTransport final : public XcpTransport {
  public:
-  explicit XcpCanTransport(CanTransportConfig cfg);
+  /// The device must outlive the transport.  Typically a TsCanDevice is
+  /// owned by main() and opened before the master is built.
+  XcpCanTransport(TsCanDevice& device, CanTransportConfig cfg);
   ~XcpCanTransport() override;
 
   bool Open() override;
@@ -67,8 +74,9 @@ class XcpCanTransport final : public XcpTransport {
                      std::chrono::milliseconds timeout) override;
   void Flush() override;
 
-  /// Update the slave CAN id after CONNECT (some A2L files declare a default
-  /// slave id but the ECU returns a real one in the GET_SLAVE_ID broadcast).
+  /// Update the slave CAN id after CONNECT (some A2L files declare a
+  /// default slave id but the ECU returns a real one in the GET_SLAVE_ID
+  /// broadcast).
   void SetCanIdSlave(uint32_t id, bool extended) {
     std::scoped_lock lk(mutex_);
     cfg_.can_id_slave = id;
@@ -83,11 +91,13 @@ class XcpCanTransport final : public XcpTransport {
   static uint8_t LenToDlc(std::size_t len);
 
  private:
-  bool BuildFrame(TLIBCANFD& frame, const uint8_t* data, std::size_t size) const;
+  bool BuildFrame(TLibCANFD& frame, const uint8_t* data,
+                  std::size_t size) const;
 
+  TsCanDevice& device_;
   CanTransportConfig cfg_;
   std::mutex mutex_;
-  std::atomic<bool> open_{false};
+  std::atomic<bool> open_{ false };
 };
 
 }  // namespace xcp_master

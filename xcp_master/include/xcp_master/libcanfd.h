@@ -2,81 +2,42 @@
  * Copyright 2026
  * SPDX-License-Identifier: MIT
  *
- * Vendor-supplied CAN/CANFD frame structure and access functions.
+ * Glue between the XCP Master and the TOSUN TSMaster TSCAN SDK.
  *
- * The user provides the following native types and APIs:
- *   typedef struct _TLIBCANFD { ... } TLIBCANFD, *PLIBCANFD;
- *   int tsapp_transmit_canfd_async(const PLIBCANFD ACANFD);
- *   int tsfifo_receive_canfd_msgs(const PLIBCANFD ACANFDBuffers,
- *                                 const ps32 ACANFDBufferSize,
- *                                 const s32 AIdxChn,
- *                                 const bool AIncludeTx);
+ * TSCANDef.hpp ships with the SDK and defines:
+ *   - the integer aliases (u8/s32/u64/...) the API uses,
+ *   - the TLibCANFD frame structure,
+ *   - the TLIBCANFDControllerType / TLIBCANFDControllerMode enums,
+ *   - the APP_CHANNEL enum,
+ *   - every `extern "C"` entry point we call (initialize_lib_tscan,
+ *     tscan_scan_devices, tscan_get_device_info, tscan_connect,
+ *     tscan_disconnect_by_handle, tscan_config_canfd_by_baudrate,
+ *     tscan_transmit_canfd_async, tsfifo_receive_canfd_msgs, ...).
  *
- * The struct definition is replicated here so the XCP Master library compiles
- * standalone. When linked into a project that already defines TLIBCANFD,
- * define XCP_MASTER_USE_EXTERNAL_CANFD before including this header and supply
- * the headers via XCP_MASTER_EXTERNAL_CANFD_HEADER.
+ * We include it here so the transport, the device wrapper and the example
+ * all see the *same* type definitions and function signatures.  The SDK
+ * itself is a Linux shared library (libTSCANApiOnLinux.so) that, at runtime,
+ * dlopen()s libTSH.so from the working directory - see CMakeLists.txt for
+ * the staging step that copies libTSH.so next to the executable.
  */
 
 #pragma once
 
-#include <cstdint>
-
-#if defined(XCP_MASTER_USE_EXTERNAL_CANFD)
-#  if defined(XCP_MASTER_EXTERNAL_CANFD_HEADER)
-#    include XCP_MASTER_EXTERNAL_CANFD_HEADER
-#  endif
-#else
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-using u8  = uint8_t;
-using s32 = int32_t;
-using s64 = int64_t;
-using ps32 = s32*;
-
-typedef struct _TLIBCANFD {
-  u8  FIdxChn;       // channel index starting from 0
-  u8  FProperties;   // [7]err [6]logged [2]ext [1]rtr [0]dir (0 RX, 1 TX)
-  u8  FDLC;          // dlc 0..15
-  u8  FFDProperties; // [2]ESI [1]BRS [0]EDL (1 = FD frame)
-  s32 FIdentifier;   // CAN identifier
-  s64 FTimeUs;       // timestamp in microseconds
-  u8  FData[64];
-} TLIBCANFD, *PLIBCANFD;
-
-// Property bit helpers used by both sending and receiving sides.
-constexpr u8 kCanPropDirTx       = 0x01;  // bit 0: 0 RX, 1 TX
-constexpr u8 kCanPropRtr         = 0x02;  // bit 1: remote frame
-constexpr u8 kCanPropExtended    = 0x04;  // bit 2: extended (29-bit) ID
-constexpr u8 kCanPropErrorFrame  = 0x80;  // bit 7: error frame
-
-constexpr u8 kCanFdPropEdl       = 0x01;  // bit 0: 1 = CAN-FD frame
-constexpr u8 kCanFdPropBrs       = 0x02;  // bit 1: bit-rate switch
-constexpr u8 kCanFdPropEsi       = 0x04;  // bit 2: error state indicator
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif  // !XCP_MASTER_USE_EXTERNAL_CANFD
-
-#ifdef __cplusplus
+#include "xcp_master/TSCANDef.hpp"
 
 namespace xcp_master {
 
-// Vendor transmit/receive signatures, redeclared so the XCP Master can call
-// them directly when linked with the vendor driver.
-extern "C" {
-int tsapp_transmit_canfd_async(const PLIBCANFD ACANFD);
-int tsfifo_receive_canfd_msgs(const PLIBCANFD ACANFDBuffers,
-                              const ps32 ACANFDBufferSize,
-                              const s32 AIdxChn,
-                              const bool AIncludeTx);
-}
+// Channel-property aliases (mirroring the SDK's MASK_CAN* / MASK_CANFD*
+// macros) so call-sites in this project stay readable.  We don't redefine
+// the bits: just expose them under the same names we used in the previous
+// stub header.
+constexpr u8 kCanPropDirTx      = MASK_CANProp_DIR_TX;   // 0x01
+constexpr u8 kCanPropRtr        = MASK_CANProp_REMOTE;   // 0x02
+constexpr u8 kCanPropExtended   = MASK_CANProp_EXTEND;   // 0x04
+constexpr u8 kCanPropErrorFrame = MASK_CANProp_ERROR;    // 0x80
+
+constexpr u8 kCanFdPropEdl      = MASK_CANFDProp_IS_FD;  // 0x01
+constexpr u8 kCanFdPropBrs      = MASK_CANFDProp_IS_BRS; // 0x02
+constexpr u8 kCanFdPropEsi      = MASK_CANFDProp_IS_ESI; // 0x04
 
 }  // namespace xcp_master
-
-#endif  // __cplusplus

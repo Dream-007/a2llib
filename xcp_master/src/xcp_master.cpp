@@ -739,4 +739,68 @@ XcpResult XcpMaster::UploadBlock(uint32_t address, uint8_t addr_extension,
   return done;
 }
 
+// ===========================================================================
+// Seed & Key helpers
+// ===========================================================================
+XcpResult XcpMaster::GetSeedComplete(uint8_t resource,
+                                     std::vector<uint8_t>& seed_out) {
+  seed_out.clear();
+  // GET_SEED response is FF <LEN> <seed bytes...>, so MAX_CTO must allow at
+  // least one seed byte: PID + LEN + 1 = 3.
+  if (cfg_.max_cto < 3) {
+    return XcpResult::Failure("max_cto too small for GET_SEED");
+  }
+  uint8_t mode = 0;
+  while (true) {
+    auto r = GetSeed(mode, mode == 0 ? resource : 0);
+    if (!r) return r;
+    if (r.payload.empty()) {
+      return XcpResult::Failure("GET_SEED response missing length byte");
+    }
+    const uint8_t remaining = r.payload[0];
+    const std::size_t chunk_size = r.payload.size() - 1;
+    if (mode == 0 && remaining == 0) {
+      // Spec: LENGTH=0 on the first request means the resource is already
+      // unlocked; the slave sends no seed bytes.
+      return r;
+    }
+    if (chunk_size == 0) {
+      return XcpResult::Failure("GET_SEED returned no seed bytes");
+    }
+    seed_out.insert(seed_out.end(), r.payload.begin() + 1, r.payload.end());
+    if (chunk_size >= remaining) break;
+    mode = 1;
+  }
+  XcpResult done;
+  done.ok = true;
+  return done;
+}
+
+XcpResult XcpMaster::SendKey(const uint8_t* key, std::size_t key_len) {
+  if (key == nullptr || key_len == 0) {
+    return XcpResult::Failure("empty key");
+  }
+  // UNLOCK REMAINING is a single byte — the spec caps key length at 255.
+  if (key_len > 0xFF) {
+    return XcpResult::Failure(
+        "key length exceeds 255 bytes (UNLOCK REMAINING is 8-bit)");
+  }
+  // UNLOCK frame is F7 <REMAINING> <key bytes...>, so MAX_CTO must allow at
+  // least one key byte.
+  if (cfg_.max_cto < 3) {
+    return XcpResult::Failure("max_cto too small for UNLOCK");
+  }
+  const std::size_t chunk_cap = cfg_.max_cto - 2;
+  std::size_t offset = 0;
+  XcpResult last;
+  while (offset < key_len) {
+    const std::size_t remaining = key_len - offset;
+    const std::size_t chunk = std::min(remaining, chunk_cap);
+    last = Unlock(static_cast<uint8_t>(remaining), key + offset, chunk);
+    if (!last) return last;
+    offset += chunk;
+  }
+  return last;
+}
+
 }  // namespace xcp_master

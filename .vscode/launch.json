@@ -10,7 +10,7 @@
                 "${workspaceFolder}/XCPsim.a2l"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/xcp_master/build",
             "environment": [
                 { "name": "XCP_CAN_ID_MASTER", "value": "0x01" },
                 { "name": "XCP_CAN_ID_SLAVE",  "value": "0x02" }
@@ -41,7 +41,7 @@
                 "${input:a2lPath}"
             ],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/xcp_master/build",
             "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",

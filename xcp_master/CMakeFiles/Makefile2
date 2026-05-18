@@ -88,12 +88,12 @@ clean: CMakeFiles/xcp_master_example.dir/clean
 CMakeFiles/xcp_master.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=1,2,3,4 "Built target xcp_master"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=1,2,3,4,5,6 "Built target xcp_master"
 .PHONY : CMakeFiles/xcp_master.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/xcp_master.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles 4
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles 6
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/xcp_master.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles 0
 .PHONY : CMakeFiles/xcp_master.dir/rule
@@ -105,7 +105,7 @@ xcp_master: CMakeFiles/xcp_master.dir/rule
 # codegen rule for target.
 CMakeFiles/xcp_master.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master.dir/build.make CMakeFiles/xcp_master.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=1,2,3,4 "Finished codegen for target xcp_master"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=1,2,3,4,5,6 "Finished codegen for target xcp_master"
 .PHONY : CMakeFiles/xcp_master.dir/codegen
 
 # clean rule for target.
@@ -120,12 +120,12 @@ CMakeFiles/xcp_master.dir/clean:
 CMakeFiles/xcp_master_example.dir/all: CMakeFiles/xcp_master.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master_example.dir/build.make CMakeFiles/xcp_master_example.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master_example.dir/build.make CMakeFiles/xcp_master_example.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=5,6 "Built target xcp_master_example"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=7,8 "Built target xcp_master_example"
 .PHONY : CMakeFiles/xcp_master_example.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/xcp_master_example.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles 6
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles 8
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/xcp_master_example.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles 0
 .PHONY : CMakeFiles/xcp_master_example.dir/rule
@@ -137,7 +137,7 @@ xcp_master_example: CMakeFiles/xcp_master_example.dir/rule
 # codegen rule for target.
 CMakeFiles/xcp_master_example.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/xcp_master_example.dir/build.make CMakeFiles/xcp_master_example.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=5,6 "Finished codegen for target xcp_master_example"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=7,8 "Finished codegen for target xcp_master_example"
 .PHONY : CMakeFiles/xcp_master_example.dir/codegen
 
 # clean rule for target.

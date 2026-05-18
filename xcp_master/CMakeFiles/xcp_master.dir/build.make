@@ -114,11 +114,41 @@ CMakeFiles/xcp_master.dir/src/xcp_error.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcp_master.dir/src/xcp_error.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/shiheping/QianLiPrj/a2llib/xcp_master/src/xcp_error.cpp -o CMakeFiles/xcp_master.dir/src/xcp_error.cpp.s
 
+CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o: CMakeFiles/xcp_master.dir/flags.make
+CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o: src/ts_can_device.cpp
+CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o: CMakeFiles/xcp_master.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o -MF CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o.d -o CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o -c /home/shiheping/QianLiPrj/a2llib/xcp_master/src/ts_can_device.cpp
+
+CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/shiheping/QianLiPrj/a2llib/xcp_master/src/ts_can_device.cpp > CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.i
+
+CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/shiheping/QianLiPrj/a2llib/xcp_master/src/ts_can_device.cpp -o CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.s
+
+CMakeFiles/xcp_master.dir/src/signal_access.cpp.o: CMakeFiles/xcp_master.dir/flags.make
+CMakeFiles/xcp_master.dir/src/signal_access.cpp.o: src/signal_access.cpp
+CMakeFiles/xcp_master.dir/src/signal_access.cpp.o: CMakeFiles/xcp_master.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/xcp_master.dir/src/signal_access.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/xcp_master.dir/src/signal_access.cpp.o -MF CMakeFiles/xcp_master.dir/src/signal_access.cpp.o.d -o CMakeFiles/xcp_master.dir/src/signal_access.cpp.o -c /home/shiheping/QianLiPrj/a2llib/xcp_master/src/signal_access.cpp
+
+CMakeFiles/xcp_master.dir/src/signal_access.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/xcp_master.dir/src/signal_access.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/shiheping/QianLiPrj/a2llib/xcp_master/src/signal_access.cpp > CMakeFiles/xcp_master.dir/src/signal_access.cpp.i
+
+CMakeFiles/xcp_master.dir/src/signal_access.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/xcp_master.dir/src/signal_access.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/shiheping/QianLiPrj/a2llib/xcp_master/src/signal_access.cpp -o CMakeFiles/xcp_master.dir/src/signal_access.cpp.s
+
 # Object files for target xcp_master
 xcp_master_OBJECTS = \
 "CMakeFiles/xcp_master.dir/src/xcp_master.cpp.o" \
 "CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o" \
-"CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o"
+"CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o" \
+"CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o" \
+"CMakeFiles/xcp_master.dir/src/signal_access.cpp.o"
 
 # External object files for target xcp_master
 xcp_master_EXTERNAL_OBJECTS =
@@ -126,9 +156,11 @@ xcp_master_EXTERNAL_OBJECTS =
 libxcp_master.a: CMakeFiles/xcp_master.dir/src/xcp_master.cpp.o
 libxcp_master.a: CMakeFiles/xcp_master.dir/src/xcp_can_transport.cpp.o
 libxcp_master.a: CMakeFiles/xcp_master.dir/src/xcp_error.cpp.o
+libxcp_master.a: CMakeFiles/xcp_master.dir/src/ts_can_device.cpp.o
+libxcp_master.a: CMakeFiles/xcp_master.dir/src/signal_access.cpp.o
 libxcp_master.a: CMakeFiles/xcp_master.dir/build.make
 libxcp_master.a: CMakeFiles/xcp_master.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Linking CXX static library libxcp_master.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/shiheping/QianLiPrj/a2llib/xcp_master/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Linking CXX static library libxcp_master.a"
 	$(CMAKE_COMMAND) -P CMakeFiles/xcp_master.dir/cmake_clean_target.cmake
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/xcp_master.dir/link.txt --verbose=$(VERBOSE)
 

@@ -6,6 +6,7 @@
 #include "xcp_master/xcp_can_transport.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstring>
 #include <thread>
@@ -32,11 +33,13 @@ uint8_t XcpCanTransport::LenToDlc(std::size_t len) {
   return 15;  // 64 bytes
 }
 
-XcpCanTransport::XcpCanTransport(CanTransportConfig cfg) : cfg_(cfg) {}
+XcpCanTransport::XcpCanTransport(TsCanDevice& device, CanTransportConfig cfg)
+    : device_(device), cfg_(cfg) {}
 
 XcpCanTransport::~XcpCanTransport() { Close(); }
 
 bool XcpCanTransport::Open() {
+  if (!device_.IsOpen()) return false;
   open_.store(true);
   Flush();
   return true;
@@ -44,7 +47,7 @@ bool XcpCanTransport::Open() {
 
 void XcpCanTransport::Close() { open_.store(false); }
 
-bool XcpCanTransport::BuildFrame(TLIBCANFD& frame, const uint8_t* data,
+bool XcpCanTransport::BuildFrame(TLibCANFD& frame, const uint8_t* data,
                                  std::size_t size) const {
   if (data == nullptr || size == 0) return false;
 
@@ -73,51 +76,52 @@ bool XcpCanTransport::BuildFrame(TLIBCANFD& frame, const uint8_t* data,
       length = target_len;
     }
   }
-  // Pad the unused bytes deterministically; some ECUs require it.
   std::memcpy(frame.FData, data, size);
   if (length > size) {
     std::memset(frame.FData + size, cfg_.pad_byte, length - size);
   }
-
   frame.FDLC = LenToDlc(length);
+  frame.FTimeUs = 0;
   return true;
 }
 
 bool XcpCanTransport::SendPacket(const uint8_t* data, std::size_t size) {
   if (!open_.load() || data == nullptr || size == 0) return false;
+  if (device_.Handle() == 0) return false;
 
-  TLIBCANFD frame{};
+  TLibCANFD frame{};
   if (!BuildFrame(frame, data, size)) return false;
 
   std::scoped_lock lk(mutex_);
-  const int rc = tsapp_transmit_canfd_async(&frame);
+  const uint32_t rc = tscan_transmit_canfd_async(device_.Handle(), &frame);
   return rc == 0;
 }
 
 bool XcpCanTransport::ReceivePacket(std::vector<uint8_t>& out,
                                     std::chrono::milliseconds timeout) {
   if (!open_.load()) return false;
+  if (device_.Handle() == 0) return false;
 
   const auto deadline = std::chrono::steady_clock::now() + timeout;
 
-  std::array<TLIBCANFD, kFifoBatch> buf{};
+  std::array<TLibCANFD, kFifoBatch> buf{};
   while (std::chrono::steady_clock::now() < deadline) {
     int32_t count = static_cast<int32_t>(buf.size());
-    int rc = 0;
+    uint32_t rc = 0;
     {
       std::scoped_lock lk(mutex_);
-      rc = tsfifo_receive_canfd_msgs(buf.data(), &count, cfg_.channel,
-                                     /*AIncludeTx=*/false);
+      rc = tsfifo_receive_canfd_msgs(device_.Handle(), buf.data(), &count,
+                                     /*AChn=*/cfg_.channel,
+                                     /*ARXTX=*/0);  // 0 = only RX frames
     }
     if (rc != 0) {
-      // Driver reports an error - retry briefly until the deadline.
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
     }
 
     for (int32_t i = 0; i < count; ++i) {
-      const TLIBCANFD& frame = buf[i];
-      if ((frame.FProperties & kCanPropDirTx) != 0) continue;  // ignore TX echoes
+      const TLibCANFD& frame = buf[i];
+      if ((frame.FProperties & kCanPropDirTx) != 0) continue;
       if ((frame.FProperties & kCanPropErrorFrame) != 0) continue;
 
       const uint32_t id = static_cast<uint32_t>(frame.FIdentifier);
@@ -139,14 +143,16 @@ bool XcpCanTransport::ReceivePacket(std::vector<uint8_t>& out,
 }
 
 void XcpCanTransport::Flush() {
-  // Drain the FIFO by reading-and-discarding.
-  std::array<TLIBCANFD, kFifoBatch> buf{};
+  // Drain the FIFO by reading-and-discarding.  Pass rxtx=1 so any echo of
+  // pre-existing TX frames is removed too.
+  if (device_.Handle() == 0) return;
+  std::array<TLibCANFD, kFifoBatch> buf{};
   for (int i = 0; i < 4; ++i) {
     int32_t count = static_cast<int32_t>(buf.size());
     std::scoped_lock lk(mutex_);
-    if (tsfifo_receive_canfd_msgs(buf.data(), &count, cfg_.channel, true) != 0) {
-      break;
-    }
+    const uint32_t rc = tsfifo_receive_canfd_msgs(device_.Handle(), buf.data(),
+                                                  &count, cfg_.channel, 1);
+    if (rc != 0) break;
     if (count == 0) break;
   }
 }

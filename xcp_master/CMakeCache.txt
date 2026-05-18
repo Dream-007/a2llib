@@ -131,7 +131,7 @@ CMAKE_OBJDUMP:FILEPATH=/usr/bin/objdump
 CMAKE_PROJECT_COMPAT_VERSION:STATIC=
 
 //Value Computed by CMake
-CMAKE_PROJECT_DESCRIPTION:STATIC=XCP Master library and example (A2L-driven, CAN/CAN-FD transport)
+CMAKE_PROJECT_DESCRIPTION:STATIC=XCP Master library and example (A2L-driven, TOSUN TSCAN CAN-FD transport)
 
 //Value Computed by CMake
 CMAKE_PROJECT_HOMEPAGE_URL:STATIC=
@@ -221,6 +221,15 @@ CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 // during the make.  This is useful for debugging only. With Visual
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
+
+//Path to libTSCANApiOnLinux.so
+TSCAN_API_LIB:FILEPATH=/home/shiheping/QianLiPrj/a2llib/xcp_master/lib/libTSCANApiOnLinux.so
+
+//Path to libTSH.so (dlopen'd from cwd by the API lib)
+TSCAN_HELPER_LIB:FILEPATH=/home/shiheping/QianLiPrj/a2llib/xcp_master/lib/libTSH.so
+
+//Directory containing libTSCANApiOnLinux.so and libTSH.so
+TSCAN_LIB_DIR:PATH=/home/shiheping/QianLiPrj/a2llib/xcp_master/lib
 
 //Build the A2L-driven example
 XCP_MASTER_BUILD_EXAMPLE:BOOL=ON

@@ -197,6 +197,24 @@ class XcpMaster {
                         std::size_t size, std::vector<uint8_t>& out);
 
   // -------------------------------------------------------------------------
+  // Seed & Key helpers.  GET_SEED and UNLOCK may both span multiple CTO
+  // frames when the seed or key exceeds MAX_CTO - 2 bytes; these helpers run
+  // the standard mode=0 / mode=1 (or remaining-bytes) loop per ASAM XCP v1.x.
+  // -------------------------------------------------------------------------
+  /// Repeatedly call GET_SEED (mode=0 then mode=1) until the full seed is
+  /// collected.  On success seed_out holds the concatenated seed.  If the
+  /// slave reports LENGTH = 0 on the first request, the resource is already
+  /// unlocked: the call returns ok with seed_out left empty.
+  XcpResult GetSeedComplete(uint8_t resource, std::vector<uint8_t>& seed_out);
+
+  /// Send a key of arbitrary length by slicing it into MAX_CTO-2 chunks.
+  /// The REMAINING byte of each UNLOCK frame is the total number of key
+  /// bytes still to be transferred, *including* the bytes carried by that
+  /// frame.  On success the returned XcpResult is the slave's final
+  /// positive response, whose payload[0] is CURRENT_RESOURCE_PROTECTION.
+  XcpResult SendKey(const uint8_t* key, std::size_t key_len);
+
+  // -------------------------------------------------------------------------
   // Low-level: send a raw CTO packet and wait for the response.  All higher
   // level methods funnel through this one.
   // -------------------------------------------------------------------------
