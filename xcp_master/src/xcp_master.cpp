@@ -9,8 +9,15 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdio>
 #include <cstring>
 #include <utility>
+
+#if defined(_WIN32)
+#  include <windows.h>
+#else
+#  include <dlfcn.h>
+#endif
 
 namespace xcp_master {
 
@@ -21,6 +28,38 @@ constexpr std::chrono::milliseconds kDefaultRecvTimeout{ 250 };
 std::vector<uint8_t> MakePacket(XcpCommand cmd) {
   return std::vector<uint8_t>{ static_cast<uint8_t>(cmd) };
 }
+
+// ---------------------------------------------------------------------------
+// Tiny dlopen / LoadLibrary abstraction used by Authenticate(library_path).
+// Kept local so the public header doesn't need to leak <windows.h>.
+// ---------------------------------------------------------------------------
+#if defined(_WIN32)
+using DllHandle = HMODULE;
+inline DllHandle DllOpen(const char* path) { return ::LoadLibraryA(path); }
+inline void* DllSym(DllHandle h, const char* name) {
+  return reinterpret_cast<void*>(::GetProcAddress(h, name));
+}
+inline void DllClose(DllHandle h) { ::FreeLibrary(h); }
+inline std::string DllError() {
+  char buf[64];
+  std::snprintf(buf, sizeof(buf), "WinAPI error %lu",
+                static_cast<unsigned long>(::GetLastError()));
+  return buf;
+}
+#else
+using DllHandle = void*;
+inline DllHandle DllOpen(const char* path) {
+  return ::dlopen(path, RTLD_NOW | RTLD_LOCAL);
+}
+inline void* DllSym(DllHandle h, const char* name) {
+  return ::dlsym(h, name);
+}
+inline void DllClose(DllHandle h) { ::dlclose(h); }
+inline std::string DllError() {
+  const char* e = ::dlerror();
+  return e ? std::string(e) : std::string("unknown dl error");
+}
+#endif
 
 }  // namespace
 
@@ -801,6 +840,66 @@ XcpResult XcpMaster::SendKey(const uint8_t* key, std::size_t key_len) {
     offset += chunk;
   }
   return last;
+}
+
+XcpResult XcpMaster::Authenticate(uint8_t resource,
+                                  XcpComputeKeyFromSeedFn compute) {
+  if (compute == nullptr) {
+    return XcpResult::Failure("Authenticate: null compute function");
+  }
+
+  std::vector<uint8_t> seed;
+  auto get = GetSeedComplete(resource, seed);
+  if (!get) return get;
+  if (seed.empty()) {
+    // Resource was already unlocked — surface the GET_SEED response unchanged.
+    return get;
+  }
+  if (seed.size() > 0xFF) {
+    return XcpResult::Failure("seed length exceeds 255 bytes");
+  }
+
+  // Vector/ETAS convention: caller pre-fills key_length with the buffer
+  // capacity; callee overwrites it with the actual key length on success.
+  std::vector<uint8_t> key(0xFF, 0);
+  uint8_t key_len = static_cast<uint8_t>(key.size());
+  const uint32_t rc =
+      compute(resource, seed.data(), static_cast<uint8_t>(seed.size()),
+              key.data(), &key_len);
+  if (rc != 0) {
+    char buf[64];
+    std::snprintf(buf, sizeof(buf),
+                  "XCP_ComputeKeyFromSeed returned 0x%08X",
+                  static_cast<unsigned>(rc));
+    return XcpResult::Failure(buf);
+  }
+  if (key_len == 0) {
+    return XcpResult::Failure("XCP_ComputeKeyFromSeed returned zero-length key");
+  }
+  return SendKey(key.data(), key_len);
+}
+
+XcpResult XcpMaster::Authenticate(uint8_t resource,
+                                  const std::string& library_path) {
+  if (library_path.empty()) {
+    return XcpResult::Failure("Authenticate: empty library path");
+  }
+  DllHandle handle = DllOpen(library_path.c_str());
+  if (handle == nullptr) {
+    return XcpResult::Failure("failed to load '" + library_path +
+                              "': " + DllError());
+  }
+  auto fn = reinterpret_cast<XcpComputeKeyFromSeedFn>(
+      DllSym(handle, kSeedKeyFunctionName));
+  if (fn == nullptr) {
+    std::string err = std::string("symbol '") + kSeedKeyFunctionName +
+                      "' not found in '" + library_path + "': " + DllError();
+    DllClose(handle);
+    return XcpResult::Failure(std::move(err));
+  }
+  auto result = Authenticate(resource, fn);
+  DllClose(handle);
+  return result;
 }
 
 }  // namespace xcp_master

@@ -35,3 +35,8 @@ CMakeSettings.json
 build*/
 XCPsim.a2l
 XCPsim_export.json
+*.o
+*.a
+*.d
+CMakeFiles/
+xcp_master_example

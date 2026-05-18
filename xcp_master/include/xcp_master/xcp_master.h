@@ -25,6 +25,27 @@
 
 namespace xcp_master {
 
+// ---------------------------------------------------------------------------
+// Seed-and-key compute function exported by Vector/ETAS-style XCP DLL/.so
+// files.  Signature is fixed by the OEM convention:
+//   uint32_t XCP_ComputeKeyFromSeed(
+//       uint8_t  privilege,     // resource bit(s) to unlock
+//       uint8_t* seed,          // [in]  seed bytes from GET_SEED
+//       uint8_t  seed_length,
+//       uint8_t* key,           // [out] computed key buffer
+//       uint8_t* key_length);   // [in/out] buffer size in, key size out
+// Returns 0 on success, non-zero error code on failure.
+// ---------------------------------------------------------------------------
+extern "C" {
+using XcpComputeKeyFromSeedFn = uint32_t (*)(uint8_t privilege,
+                                             uint8_t* seed,
+                                             uint8_t seed_length,
+                                             uint8_t* key,
+                                             uint8_t* key_length);
+}
+
+constexpr const char* kSeedKeyFunctionName = "XCP_ComputeKeyFromSeed";
+
 /// Result of a request/response transaction.
 struct XcpResult {
   bool ok = false;             ///< true => positive response
@@ -213,6 +234,21 @@ class XcpMaster {
   /// frame.  On success the returned XcpResult is the slave's final
   /// positive response, whose payload[0] is CURRENT_RESOURCE_PROTECTION.
   XcpResult SendKey(const uint8_t* key, std::size_t key_len);
+
+  /// Authenticate against a single resource: run GetSeedComplete, hand the
+  /// seed to `compute`, then run SendKey.  If the slave reports the resource
+  /// is already unlocked (GET_SEED returns LENGTH=0), the compute callback
+  /// is not invoked and the GET_SEED response is returned as-is.  On
+  /// success, the returned XcpResult's payload[0] is the final
+  /// CURRENT_RESOURCE_PROTECTION from UNLOCK.
+  XcpResult Authenticate(uint8_t resource, XcpComputeKeyFromSeedFn compute);
+
+  /// Authenticate by dynamically loading a shared library (.dll on Windows,
+  /// .so on Linux) and resolving the standard `XCP_ComputeKeyFromSeed`
+  /// symbol.  The library handle is closed before this function returns.
+  /// For repeated authentications hold an external handle and use the
+  /// function-pointer overload instead.
+  XcpResult Authenticate(uint8_t resource, const std::string& library_path);
 
   // -------------------------------------------------------------------------
   // Low-level: send a raw CTO packet and wait for the response.  All higher

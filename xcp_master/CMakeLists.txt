@@ -107,6 +107,11 @@ set_target_properties(tscan_api PROPERTIES
 
 target_link_libraries(xcp_master PUBLIC tscan_api)
 
+# Authenticate(library_path) uses dlopen / LoadLibrary at runtime; the
+# Windows side resolves through kernel32 (no extra link), Linux/macOS need
+# libdl via the platform-neutral CMAKE_DL_LIBS variable.
+target_link_libraries(xcp_master PRIVATE ${CMAKE_DL_LIBS})
+
 if (MSVC)
     target_compile_options(xcp_master PRIVATE /W4)
 else()
