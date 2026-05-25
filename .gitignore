@@ -40,3 +40,4 @@ XCPsim_export.json
 *.d
 CMakeFiles/
 xcp_master_example
+*.pptx
