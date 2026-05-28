@@ -26,6 +26,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdint>
+#include <deque>
 #include <mutex>
 #include <vector>
 
@@ -97,6 +98,7 @@ class XcpCanTransport final : public XcpTransport {
   TsCanDevice& device_;
   CanTransportConfig cfg_;
   std::mutex mutex_;
+  std::deque<std::vector<uint8_t>> pending_rx_;
   std::atomic<bool> open_{ false };
 };
 

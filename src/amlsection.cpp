@@ -5,6 +5,7 @@
 
 #include "a2l/amlsection.h"
 
+#include <algorithm>
 #include <sstream>
 #include <fstream>
 #include <filesystem>
@@ -63,7 +64,7 @@ void AmlSection::ParseFile(const std::string& filename) {
 }
 
 const AmlDefinition* AmlSection::GetDefinitionByTag(const std::string& tag) const {
-  const auto itr = std::ranges::find_if(definition_list_,
+  const auto itr = std::find_if(definition_list_.cbegin(), definition_list_.cend(),
     [&] (const AmlDefinition& definition) -> bool {
       return definition.Tag() == tag;
   });
@@ -74,7 +75,7 @@ const AmlDefinition* AmlSection::GetDefinitionByTag(const std::string& tag) cons
 }
 
 const AmlDefinition* AmlSection::GetDefinitionByIdentity(const std::string& identity) const {
-  const auto itr = std::ranges::find_if(definition_list_,
+  const auto itr = std::find_if(definition_list_.cbegin(), definition_list_.cend(),
     [&] (const AmlDefinition& definition) -> bool {
       return definition.Identity() == identity;
   });

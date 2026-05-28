@@ -25,11 +25,11 @@ void CheckFlatMapList(const std::unordered_map<std::string,std::unique_ptr<T>>& 
 
   try {
     destination.resize(count, nullptr);
-    std::ranges::transform(source, destination.begin(),
+    std::transform(source.cbegin(), source.cend(), destination.begin(),
           [](const auto& pair) {
                   return pair.second.get();
        });
-    std::ranges::sort(destination,
+    std::sort(destination.begin(), destination.end(),
         [](const T* lhs, const T* rhs) -> bool {
       if (lhs == nullptr || rhs == nullptr) {
         return false;
@@ -366,28 +366,28 @@ void Module::CheckFlatTypedefList() const {
   try {
     flat_typedef_list_.resize(count, FlatTypedefPair{A2lTypedefType::UNKNOWN, nullptr});
     size_t index = 0;
-    for (const auto& axis_item : typedef_axis_list_ | std::views::values) {
-      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_AXIS,axis_item.get()};
+    for (const auto& axis_item : typedef_axis_list_) {
+      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_AXIS, axis_item.second.get()};
       ++index;
     }
-   for (const auto& blob_item : typedef_blob_list_ | std::views::values) {
-      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_BLOB,blob_item.get()};
+    for (const auto& blob_item : typedef_blob_list_) {
+      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_BLOB, blob_item.second.get()};
       ++index;
     }
-    for (const auto& characteristic_item : typedef_characteristic_list_ | std::views::values) {
-      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_CHARACTERISTIC,characteristic_item.get()};
+    for (const auto& characteristic_item : typedef_characteristic_list_) {
+      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_CHARACTERISTIC, characteristic_item.second.get()};
       ++index;
     }
-    for (const auto& measurement_item : typedef_measurement_list_ | std::views::values) {
-      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_MEASUREMENT,measurement_item.get()};
+    for (const auto& measurement_item : typedef_measurement_list_) {
+      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_MEASUREMENT, measurement_item.second.get()};
       ++index;
     }
-    for (const auto& structure_item : typedef_structure_list_ | std::views::values) {
-      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_STRUCTURE,structure_item.get()};
+    for (const auto& structure_item : typedef_structure_list_) {
+      flat_typedef_list_[index] = {A2lTypedefType::TYPEDEF_STRUCTURE, structure_item.second.get()};
       ++index;
     }
 
-    std::ranges::sort(flat_typedef_list_,
+    std::sort(flat_typedef_list_.begin(), flat_typedef_list_.end(),
         [](const FlatTypedefPair& lhs, const FlatTypedefPair& rhs) -> bool {
       if (lhs.second == nullptr || rhs.second == nullptr) {
         return false;

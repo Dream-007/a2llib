@@ -50,8 +50,8 @@ bool AmlMember::IsEnumerated() const {
     return false;
   }
 
-  const bool no_enum = std::ranges::all_of(enumerate_list_,
-    [](const auto& enumerate) ->bool {
+  const bool no_enum = std::all_of(enumerate_list_.cbegin(), enumerate_list_.cend(),
+    [](const auto& enumerate) -> bool {
       return enumerate.second == 0;
     });
   return !no_enum;

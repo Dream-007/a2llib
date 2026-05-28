@@ -73,6 +73,7 @@ struct XcpMasterConfig {
   std::size_t max_dto = 8;    ///< Updated from CONNECT response.
   ByteOrder byte_order = ByteOrder::LITTLE;
   AddressGranularity granularity = AddressGranularity::BYTE;
+  bool slave_block_mode = false; ///< Slave may send multiple CTOs per UPLOAD.
   bool log_traffic = false;
 };
 
@@ -213,7 +214,8 @@ class XcpMaster {
   XcpResult DownloadBlock(uint32_t address, uint8_t addr_extension,
                           const uint8_t* data, std::size_t size);
 
-  /// Issue SET_MTA followed by UPLOAD calls until size bytes are read.
+  /// Issue SET_MTA followed by UPLOAD until size bytes are read.  Uses one
+  /// block-mode UPLOAD when the slave advertises SLAVE_BLOCK_MODE.
   XcpResult UploadBlock(uint32_t address, uint8_t addr_extension,
                         std::size_t size, std::vector<uint8_t>& out);
 

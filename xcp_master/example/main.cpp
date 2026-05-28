@@ -218,6 +218,8 @@ int main(int argc, char* argv[]) {
   // keeps working.
   std::vector<std::string> positional;
   std::vector<std::string> reads;
+  reads.push_back("noiseSignal");
+  reads.push_back("int16TestParam1");
   std::vector<std::pair<std::string, std::string>> writes;
   for (int i = 1; i < argc; ++i) {
     std::string a = argv[i];
@@ -334,6 +336,10 @@ int main(int argc, char* argv[]) {
               << std::hex << static_cast<int>(decoded->resource)
               << " COMM_BASIC=0x"
               << static_cast<int>(decoded->comm_mode_basic) << std::dec
+              << " SLAVE_BLOCK="
+              << ((decoded->comm_mode_basic & xcp_master::CMB_SLAVE_BLOCK_MODE)
+                      ? "yes"
+                      : "no")
               << " PL=" << static_cast<int>(decoded->protocol_layer_version)
               << " TL=" << static_cast<int>(decoded->transport_layer_version)
               << '\n';

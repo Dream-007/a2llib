@@ -2,14 +2,37 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "xcp_master: check gdb",
+            "type": "shell",
+            "command": "/usr/bin/bash",
+            "args": [
+                "-lc",
+                "if [ ! -x /usr/bin/gdb ]; then echo 'gdb is required at /usr/bin/gdb for VS Code C++ breakpoint debugging. Install it with: sudo apt install gdb'; exit 1; fi"
+            ],
+            "problemMatcher": [],
+            "detail": "Verify that the GDB debugger required by launch.json is installed."
+        },
+        {
+            "label": "xcp_master: debug preflight",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "xcp_master: check gdb",
+                "xcp_master: build"
+            ],
+            "problemMatcher": [],
+            "detail": "Check debugger availability, then build xcp_master_example."
+        },
+        {
             "label": "xcp_master: cmake configure",
             "type": "shell",
-            "command": "/home/shiheping/.local/lib/python3.8/site-packages/cmake/data/bin/cmake",
+            "command": "/usr/bin/cmake",
             "args": [
                 "-S", "${workspaceFolder}/xcp_master",
                 "-B", "${workspaceFolder}/xcp_master/build",
                 "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+                "-DA2L_STATIC_LIB=${workspaceFolder}/build/liba2ld.a",
+                "-DA2L_INCLUDE_DIR=${workspaceFolder}/include"
             ],
             "problemMatcher": [],
             "group": "build",
@@ -18,7 +41,7 @@
         {
             "label": "xcp_master: build",
             "type": "shell",
-            "command": "/home/shiheping/.local/lib/python3.8/site-packages/cmake/data/bin/cmake",
+            "command": "/usr/bin/cmake",
             "args": [
                 "--build", "${workspaceFolder}/xcp_master/build",
                 "-j", "4"
@@ -32,9 +55,9 @@
             "detail": "Build xcp_master library + xcp_master_example with debug symbols."
         },
         {
-            "type": "cppbuild",
-            "label": "C/C++: g++-13 生成活动文件",
-            "command": "/usr/bin/g++-13",
+            "type": "shell",
+            "label": "C/C++: g++-11 生成活动文件",
+            "command": "/usr/bin/g++-11",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",

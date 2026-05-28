@@ -67,7 +67,8 @@
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
-            ]
+            ],
+            "preLaunchTask": "xcp_master: build"
         }
     ],
     "inputs": [
