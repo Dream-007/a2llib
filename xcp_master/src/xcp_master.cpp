@@ -29,6 +29,21 @@ std::vector<uint8_t> MakePacket(XcpCommand cmd) {
   return std::vector<uint8_t>{ static_cast<uint8_t>(cmd) };
 }
 
+std::size_t GranularityBytes(AddressGranularity granularity) {
+  switch (granularity) {
+    case AddressGranularity::BYTE: return 1;
+    case AddressGranularity::WORD: return 2;
+    case AddressGranularity::DWORD: return 4;
+  }
+  return 1;
+}
+
+std::size_t ElementsForBytes(std::size_t byte_count,
+                             AddressGranularity granularity) {
+  const std::size_t ag = GranularityBytes(granularity);
+  return (byte_count + ag - 1) / ag;
+}
+
 // ---------------------------------------------------------------------------
 // Tiny dlopen / LoadLibrary abstraction used by Authenticate(library_path).
 // Kept local so the public header doesn't need to leak <windows.h>.
@@ -132,9 +147,12 @@ bool XcpMaster::ReceiveResponse(std::vector<uint8_t>& out,
     }
     if (frame.empty()) continue;
     const uint8_t pid = frame[0];
-    if (pid == kPidResp || pid == kPidErr || pid == kPidEv || pid == kPidServ) {
+    if (pid == kPidResp || pid == kPidErr) {
       out = std::move(frame);
       return true;
+    }
+    if (pid == kPidEv || pid == kPidServ) {
+      continue;
     }
     // Otherwise this is a DAQ DTO (pid < 0xFC).
     if (daq_cb_) {
@@ -206,6 +224,8 @@ XcpResult XcpMaster::Connect(uint8_t mode) {
       cfg_.max_dto = decoded->max_dto != 0 ? decoded->max_dto : cfg_.max_dto;
       cfg_.byte_order = decoded->GetByteOrder();
       cfg_.granularity = decoded->GetAddressGranularity();
+      cfg_.slave_block_mode =
+          (decoded->comm_mode_basic & CMB_SLAVE_BLOCK_MODE) != 0;
     }
   }
   return r;
@@ -302,15 +322,33 @@ XcpResult XcpMaster::UserCmd(uint8_t sub_cmd, const uint8_t* params,
 
 // --- Calibration -----------------------------------------------------------
 XcpResult XcpMaster::Download(const uint8_t* data, std::size_t size) {
+  const std::size_t ag = GranularityBytes(cfg_.granularity);
+  if ((size % ag) != 0) {
+    return XcpResult::Failure(
+        "DOWNLOAD size is not aligned to address granularity");
+  }
+  const std::size_t elements = size / ag;
+  if (elements > 0xFF) {
+    return XcpResult::Failure("DOWNLOAD element count exceeds 255");
+  }
   auto pkt = MakePacket(XcpCommand::DOWNLOAD);
-  pkt.push_back(static_cast<uint8_t>(size));
+  pkt.push_back(static_cast<uint8_t>(elements));
   if (data && size > 0) pkt.insert(pkt.end(), data, data + size);
   return Transact(std::move(pkt), {});
 }
 
 XcpResult XcpMaster::DownloadNext(const uint8_t* data, std::size_t size) {
+  const std::size_t ag = GranularityBytes(cfg_.granularity);
+  if ((size % ag) != 0) {
+    return XcpResult::Failure(
+        "DOWNLOAD_NEXT size is not aligned to address granularity");
+  }
+  const std::size_t elements = size / ag;
+  if (elements > 0xFF) {
+    return XcpResult::Failure("DOWNLOAD_NEXT element count exceeds 255");
+  }
   auto pkt = MakePacket(XcpCommand::DOWNLOAD_NEXT);
-  pkt.push_back(static_cast<uint8_t>(size));
+  pkt.push_back(static_cast<uint8_t>(elements));
   if (data && size > 0) pkt.insert(pkt.end(), data, data + size);
   return Transact(std::move(pkt), {});
 }
@@ -323,8 +361,17 @@ XcpResult XcpMaster::DownloadMax(const uint8_t* data, std::size_t size) {
 
 XcpResult XcpMaster::ShortDownload(uint32_t address, uint8_t addr_extension,
                                    const uint8_t* data, std::size_t size) {
+  const std::size_t ag = GranularityBytes(cfg_.granularity);
+  if ((size % ag) != 0) {
+    return XcpResult::Failure(
+        "SHORT_DOWNLOAD size is not aligned to address granularity");
+  }
+  const std::size_t elements = size / ag;
+  if (elements > 0xFF) {
+    return XcpResult::Failure("SHORT_DOWNLOAD element count exceeds 255");
+  }
   auto pkt = MakePacket(XcpCommand::SHORT_DOWNLOAD);
-  pkt.push_back(static_cast<uint8_t>(size));
+  pkt.push_back(static_cast<uint8_t>(elements));
   pkt.push_back(0);
   pkt.push_back(addr_extension);
   Pack32(pkt, address, cfg_.byte_order);
@@ -716,6 +763,16 @@ XcpResult XcpMaster::DownloadBlock(uint32_t address, uint8_t addr_extension,
   if (data == nullptr || size == 0) {
     return XcpResult::Failure("empty download buffer");
   }
+  const std::size_t ag = GranularityBytes(cfg_.granularity);
+  if ((size % ag) != 0) {
+    return XcpResult::Failure(
+        "download size is not aligned to address granularity");
+  }
+  const std::size_t total_elements = size / ag;
+  if (total_elements > 0xFF) {
+    return XcpResult::Failure(
+        "download size exceeds 255 address-granularity elements");
+  }
 
   auto mta = SetMta(address, addr_extension);
   if (!mta) return mta;
@@ -724,31 +781,25 @@ XcpResult XcpMaster::DownloadBlock(uint32_t address, uint8_t addr_extension,
   if (cfg_.max_cto < 3) {
     return XcpResult::Failure("max_cto too small for DOWNLOAD");
   }
-  const std::size_t payload_cap = cfg_.max_cto - 2;
-
-  // First frame: DOWNLOAD carries the *total* number of elements.
-  const std::size_t first_chunk = std::min<std::size_t>(payload_cap, size);
-  {
-    // Manually build the first packet so byte 1 is the total size, not the
-    // current chunk size (DOWNLOAD allows count > payload-in-this-frame).
-    std::vector<uint8_t> pkt = { static_cast<uint8_t>(XcpCommand::DOWNLOAD),
-                                 static_cast<uint8_t>(size) };
-    pkt.insert(pkt.end(), data, data + first_chunk);
-    auto r = Transact(std::move(pkt), {});
-    if (!r) return r;
+  const std::size_t max_elements_per_cto = (cfg_.max_cto - 2) / ag;
+  if (max_elements_per_cto == 0) {
+    return XcpResult::Failure(
+        "max_cto too small for one address-granularity element");
   }
 
-  std::size_t offset = first_chunk;
-  std::size_t remaining = size - offset;
-  while (remaining > 0) {
-    const std::size_t chunk = std::min<std::size_t>(payload_cap, remaining);
-    std::vector<uint8_t> pkt = { static_cast<uint8_t>(XcpCommand::DOWNLOAD_NEXT),
-                                 static_cast<uint8_t>(remaining) };
-    pkt.insert(pkt.end(), data + offset, data + offset + chunk);
+  std::size_t offset = 0;
+  std::size_t remaining_elements = total_elements;
+  while (remaining_elements > 0) {
+    const std::size_t elements =
+        std::min<std::size_t>(max_elements_per_cto, remaining_elements);
+    const std::size_t chunk_bytes = elements * ag;
+    std::vector<uint8_t> pkt = { static_cast<uint8_t>(XcpCommand::DOWNLOAD),
+                                 static_cast<uint8_t>(elements) };
+    pkt.insert(pkt.end(), data + offset, data + offset + chunk_bytes);
     auto r = Transact(std::move(pkt), {});
     if (!r) return r;
-    offset += chunk;
-    remaining -= chunk;
+    offset += chunk_bytes;
+    remaining_elements -= elements;
   }
   XcpResult done;
   done.ok = true;
@@ -765,12 +816,67 @@ XcpResult XcpMaster::UploadBlock(uint32_t address, uint8_t addr_extension,
   if (cfg_.max_cto < 2) {
     return XcpResult::Failure("max_cto too small for UPLOAD");
   }
-  while (out.size() < size) {
-    const std::size_t chunk = std::min<std::size_t>(cfg_.max_cto - 1,
-                                                    size - out.size());
-    auto r = Upload(static_cast<uint8_t>(chunk));
+  const std::size_t ag = GranularityBytes(cfg_.granularity);
+  const std::size_t total_elements = ElementsForBytes(size, cfg_.granularity);
+  if (total_elements > 0xFF) {
+    return XcpResult::Failure(
+        "upload size exceeds 255 address-granularity elements");
+  }
+  const std::size_t target_bytes = total_elements * ag;
+  if (target_bytes > cfg_.max_cto - 1 && cfg_.slave_block_mode) {
+    std::chrono::milliseconds timeout =
+        cfg_.default_timeout > std::chrono::milliseconds(0)
+            ? cfg_.default_timeout
+            : kDefaultRecvTimeout;
+
+    std::vector<uint8_t> pkt = { static_cast<uint8_t>(XcpCommand::UPLOAD),
+                                 static_cast<uint8_t>(total_elements) };
+    std::scoped_lock lk(io_mutex_);
+    if (!transport_->SendPacket(pkt.data(), pkt.size())) {
+      return XcpResult::Failure("transport send failed");
+    }
+
+    while (out.size() < target_bytes) {
+      std::vector<uint8_t> response;
+      if (!ReceiveResponse(response, timeout)) {
+        return XcpResult::Failure("timeout waiting for block upload response");
+      }
+      if (response.empty()) continue;
+
+      const uint8_t pid = response[0];
+      if (pid == kPidErr) {
+        if (response.size() < 2) {
+          return XcpResult::Failure("malformed ERR (no error code)");
+        }
+        auto r = XcpResult::Negative(response[1]);
+        r.payload.assign(response.begin() + 2, response.end());
+        return r;
+      }
+      if (pid != kPidResp) {
+        return XcpResult::Failure(
+            pid == kPidEv ? "asynchronous EVENT during block upload"
+                          : "SERVICE_REQUEST during block upload");
+      }
+      out.insert(out.end(), response.begin() + 1, response.end());
+    }
+    if (out.size() > size) out.resize(size);
+    XcpResult done;
+    done.ok = true;
+    return done;
+  }
+  const std::size_t max_elements_per_cto = (cfg_.max_cto - 1) / ag;
+  if (max_elements_per_cto == 0) {
+    return XcpResult::Failure(
+        "max_cto too small for one address-granularity element");
+  }
+  std::size_t remaining_elements = total_elements;
+  while (out.size() < target_bytes && remaining_elements > 0) {
+    const std::size_t elements =
+        std::min<std::size_t>(max_elements_per_cto, remaining_elements);
+    auto r = Upload(static_cast<uint8_t>(elements));
     if (!r) return r;
     out.insert(out.end(), r.payload.begin(), r.payload.end());
+    remaining_elements -= elements;
   }
   if (out.size() > size) out.resize(size);
   XcpResult done;

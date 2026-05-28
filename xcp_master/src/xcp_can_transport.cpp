@@ -110,29 +110,44 @@ bool XcpCanTransport::ReceivePacket(std::vector<uint8_t>& out,
     uint32_t rc = 0;
     {
       std::scoped_lock lk(mutex_);
+      if (!pending_rx_.empty()) {
+        out = std::move(pending_rx_.front());
+        pending_rx_.pop_front();
+        return true;
+      }
+
       rc = tsfifo_receive_canfd_msgs(device_.Handle(), buf.data(), &count,
                                      /*AChn=*/cfg_.channel,
                                      /*ARXTX=*/0);  // 0 = only RX frames
+      if (rc == 0) {
+        bool have_output = false;
+        for (int32_t i = 0; i < count; ++i) {
+          const TLibCANFD& frame = buf[i];
+          if ((frame.FProperties & kCanPropDirTx) != 0) continue;
+          if ((frame.FProperties & kCanPropErrorFrame) != 0) continue;
+
+          const uint32_t id = static_cast<uint32_t>(frame.FIdentifier);
+          const bool is_extended = (frame.FProperties & kCanPropExtended) != 0;
+          if (is_extended != cfg_.extended_slave) continue;
+          if (id != cfg_.can_id_slave) continue;
+
+          const std::size_t len = DlcToLen(frame.FDLC);
+          if (len == 0) continue;
+
+          std::vector<uint8_t> packet(frame.FData, frame.FData + len);
+          if (!have_output) {
+            out = std::move(packet);
+            have_output = true;
+          } else {
+            pending_rx_.push_back(std::move(packet));
+          }
+        }
+        if (have_output) return true;
+      }
     }
     if (rc != 0) {
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
       continue;
-    }
-
-    for (int32_t i = 0; i < count; ++i) {
-      const TLibCANFD& frame = buf[i];
-      if ((frame.FProperties & kCanPropDirTx) != 0) continue;
-      if ((frame.FProperties & kCanPropErrorFrame) != 0) continue;
-
-      const uint32_t id = static_cast<uint32_t>(frame.FIdentifier);
-      const bool is_extended = (frame.FProperties & kCanPropExtended) != 0;
-      if (is_extended != cfg_.extended_slave) continue;
-      if (id != cfg_.can_id_slave) continue;
-
-      const std::size_t len = DlcToLen(frame.FDLC);
-      if (len == 0) continue;
-      out.assign(frame.FData, frame.FData + len);
-      return true;
     }
 
     if (count == 0) {
@@ -147,6 +162,10 @@ void XcpCanTransport::Flush() {
   // pre-existing TX frames is removed too.
   if (device_.Handle() == 0) return;
   std::array<TLibCANFD, kFifoBatch> buf{};
+  {
+    std::scoped_lock lk(mutex_);
+    pending_rx_.clear();
+  }
   for (int i = 0; i < 4; ++i) {
     int32_t count = static_cast<int32_t>(buf.size());
     std::scoped_lock lk(mutex_);

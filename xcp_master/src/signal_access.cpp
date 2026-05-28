@@ -129,6 +129,21 @@ bool IsSignedInteger(SignalDataType t) {
          t == SignalDataType::S32 || t == SignalDataType::S64;
 }
 
+std::size_t GranularityBytes(AddressGranularity granularity) {
+  switch (granularity) {
+    case AddressGranularity::BYTE: return 1;
+    case AddressGranularity::WORD: return 2;
+    case AddressGranularity::DWORD: return 4;
+  }
+  return 1;
+}
+
+std::size_t ElementsForBytes(std::size_t byte_count,
+                             AddressGranularity granularity) {
+  const std::size_t ag = GranularityBytes(granularity);
+  return (byte_count + ag - 1) / ag;
+}
+
 }  // namespace
 
 XcpSignalAccess::XcpSignalAccess(XcpMaster& master, const a2l::A2lFile& a2l)
@@ -263,28 +278,55 @@ bool XcpSignalAccess::ReadDescriptorBytes(const SignalDescriptor& d,
     if (err) *err = "signal '" + d.name + "': unsupported data type";
     return false;
   }
-  const XcpResult r = master_.ShortUpload(
-      static_cast<uint8_t>(d.byte_size), d.address_extension, d.address);
-  if (!r) {
-    last_xcp_err_ = r.error_code;
+
+  const std::size_t ag = GranularityBytes(master_.Config().granularity);
+  const std::size_t elements =
+      ElementsForBytes(d.byte_size, master_.Config().granularity);
+  if (elements > 0xFF) {
+    if (err) *err = "signal '" + d.name + "': read size exceeds 255 elements";
+    return false;
+  }
+  const std::size_t transfer_bytes = elements * ag;
+  const std::size_t max_short_payload =
+      master_.Config().max_cto > 1 ? master_.Config().max_cto - 1 : 0;
+  if (transfer_bytes <= max_short_payload) {
+    const XcpResult r = master_.ShortUpload(
+        static_cast<uint8_t>(elements), d.address_extension, d.address);
+    if (!r) {
+      last_xcp_err_ = r.error_code;
+      if (err) {
+        std::ostringstream os;
+        os << "ShortUpload(" << d.name << ") failed: " << r.error_name
+           << " - " << r.error_description;
+        *err = os.str();
+      }
+      return false;
+    }
+    bytes.assign(r.payload.begin(), r.payload.end());
+  } else {
+    const XcpResult r =
+        master_.UploadBlock(d.address, d.address_extension, d.byte_size, bytes);
+    if (!r) {
+      last_xcp_err_ = r.error_code;
+      if (err) {
+        std::ostringstream os;
+        os << "UploadBlock(" << d.name << ") failed: " << r.error_name
+           << " - " << r.error_description;
+        *err = os.str();
+      }
+      return false;
+    }
+  }
+  if (bytes.size() < d.byte_size) {
     if (err) {
       std::ostringstream os;
-      os << "ShortUpload(" << d.name << ") failed: " << r.error_name
-         << " - " << r.error_description;
+      os << "Read(" << d.name << ") returned "
+         << bytes.size() << " bytes, expected " << d.byte_size;
       *err = os.str();
     }
     return false;
   }
-  if (r.payload.size() < d.byte_size) {
-    if (err) {
-      std::ostringstream os;
-      os << "ShortUpload(" << d.name << ") returned "
-         << r.payload.size() << " bytes, expected " << d.byte_size;
-      *err = os.str();
-    }
-    return false;
-  }
-  bytes.assign(r.payload.begin(), r.payload.begin() + d.byte_size);
+  if (bytes.size() > d.byte_size) bytes.resize(d.byte_size);
   if (d.big_endian) std::reverse(bytes.begin(), bytes.end());
   return true;
 }
@@ -363,13 +405,26 @@ bool XcpSignalAccess::WriteDescriptorBytes(const SignalDescriptor& d,
   std::memcpy(tx, data, size);
   if (d.big_endian) std::reverse(tx, tx + size);
 
+  const std::size_t ag = GranularityBytes(master_.Config().granularity);
+  if ((size % ag) != 0) {
+    if (err) {
+      std::ostringstream os;
+      os << "signal '" << d.name
+         << "' write size is not aligned to XCP address granularity";
+      *err = os.str();
+    }
+    return false;
+  }
+  const std::size_t short_download_size = 8 + size;
   const XcpResult r =
-      master_.ShortDownload(d.address, d.address_extension, tx, size);
+      short_download_size <= master_.Config().max_cto
+          ? master_.ShortDownload(d.address, d.address_extension, tx, size)
+          : master_.DownloadBlock(d.address, d.address_extension, tx, size);
   if (!r) {
     last_xcp_err_ = r.error_code;
     if (err) {
       std::ostringstream os;
-      os << "ShortDownload(" << d.name << ") failed: " << r.error_name
+      os << "Write(" << d.name << ") failed: " << r.error_name
          << " - " << r.error_description;
       *err = os.str();
     }
